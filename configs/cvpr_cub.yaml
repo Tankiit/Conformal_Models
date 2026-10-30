@@ -1,0 +1,44 @@
+# Configuration for Conformal Concept Model on CUB-200-2011 (CVPR Pilot Benchmark)
+experiment_name: "cvpr_cub_pilot"
+seed: 42
+
+data:
+  dataset: "cub"
+  data_dir: null  # Optional path to local CUB-200-2011 directory
+  num_samples: 1600
+  num_classes: 10
+  num_concepts: 28
+  image_size: 64
+
+model:
+  backbone_type: "conv"
+  latent_dim: 256
+  hybrid_residual: false
+  residual_dim: 32
+
+training:
+  epochs: 12
+  batch_size: 32
+  lr: 0.0005
+  weight_decay: 0.0001
+  concept_loss_weight: 1.5
+  task_loss_weight: 1.0
+  device: null
+
+conformal:
+  score_type: "raps"  # Regularized APS suited for fine-grained multi-class
+  lambda_reg: 0.02
+  k_reg: 3
+  alpha: 0.10
+  alphas_audit: [0.01, 0.05, 0.10, 0.20]
+  fill_empty: true
+  difficulty_mode: "concept_entropy"
+
+interventions:
+  max_budget: 8
+  policies: ["random", "uncertainty", "greedy", "oracle"]
+
+logging:
+  save_dir: "checkpoints/cub"
+  vault_path: "vault"
+  log_to_vault: true

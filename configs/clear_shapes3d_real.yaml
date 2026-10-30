@@ -1,0 +1,44 @@
+# Configuration for Conformal Concept Model on REAL 3D Shapes (CLEAR Audit Benchmark)
+# Real data: official DeepMind 3dshapes.h5 subset, cached as NPZ in the format
+# expected by Shapes3DDataset (images / concepts / labels).
+experiment_name: "clear_shapes3d_real"
+seed: 42
+
+data:
+  dataset: "shapes3d"
+  num_samples: 5000
+  image_size: 64
+  num_concepts: 6
+  num_classes: 4
+  cache_file: "/Users/cril/tanmoy/research/data/3dshapes_subset_5000.npz"
+
+model:
+  backbone_type: "conv"
+  latent_dim: 128
+  hybrid_residual: false
+  residual_dim: 16
+
+training:
+  epochs: 10
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  concept_loss_weight: 1.0
+  task_loss_weight: 1.0
+  device: null  # Auto-detects mps/cuda/cpu
+
+conformal:
+  score_type: "aps"  # "softmax", "aps", "raps", "margin"
+  alpha: 0.10
+  alphas_audit: [0.01, 0.05, 0.10, 0.20]
+  fill_empty: true
+  difficulty_mode: "concept_entropy"
+
+interventions:
+  max_budget: 5
+  policies: ["random", "uncertainty", "greedy", "oracle"]
+
+logging:
+  save_dir: "checkpoints/shapes3d_real"
+  vault_path: "vault"
+  log_to_vault: true

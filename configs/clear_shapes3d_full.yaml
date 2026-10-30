@@ -1,0 +1,44 @@
+# Configuration for Conformal Concept Model on the FULL real 3D Shapes dataset
+# All 480,000 images from the official DeepMind 3dshapes.h5, cached as a uint8
+# NPZ (images / concepts / labels) and cast to [0,1] floats per sample.
+experiment_name: "clear_shapes3d_full"
+seed: 42
+
+data:
+  dataset: "shapes3d"
+  num_samples: 480000
+  image_size: 64
+  num_concepts: 6
+  num_classes: 4
+  cache_file: "/Users/cril/tanmoy/research/data/3dshapes_full_uint8.npz"
+
+model:
+  backbone_type: "conv"
+  latent_dim: 128
+  hybrid_residual: false
+  residual_dim: 16
+
+training:
+  epochs: 5
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  concept_loss_weight: 1.0
+  task_loss_weight: 1.0
+  device: null  # Auto-detects mps/cuda/cpu
+
+conformal:
+  score_type: "aps"
+  alpha: 0.10
+  alphas_audit: [0.01, 0.05, 0.10, 0.20]
+  fill_empty: true
+  difficulty_mode: "concept_entropy"
+
+interventions:
+  max_budget: 5
+  policies: ["random", "uncertainty", "greedy", "oracle"]
+
+logging:
+  save_dir: "checkpoints/shapes3d_full"
+  vault_path: "vault"
+  log_to_vault: true

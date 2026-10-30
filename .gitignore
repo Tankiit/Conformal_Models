@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Model Checkpoints & Large weights
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Datasets and cache arrays
+*.h5
+*.hdf5
+*.npz
+*.npy
+
+# OS and Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
