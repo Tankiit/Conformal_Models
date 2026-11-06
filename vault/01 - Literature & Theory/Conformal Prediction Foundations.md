@@ -70,5 +70,7 @@ $$
 
 ## 🔗 Related Notes
 - [[02 - Architecture & System/Nonconformity Scores|Score Function Implementations]]
+- [[01 - Literature & Theory/Label-Set Guarantee - Scope and Limits|Label-Set Guarantee: Scope and Limits]] — what this guarantee does and does not buy in the CBM pipeline
+- [[01 - Literature & Theory/Joint Concept Coverage|Joint Concept Coverage]] — the concept-side guarantee and its pitfalls
 - [[01 - Literature & Theory/CLEAR Methodology|CLEAR Audit Framework]]
 - [[00 - Dashboards/Audit Dashboard|Audit Dashboard]]

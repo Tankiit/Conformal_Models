@@ -57,3 +57,5 @@ When erroneous concepts are corrected, the downstream prediction $g_y(c)$ shifts
 - [[02 - Architecture & System/Intervention Policies|Intervention Policies]]
 - [[03 - Experiments/NN_Agreement_Audit_Shapes3d|Leakage Diagnostics]]
 - [[01 - Literature & Theory/CLEAR Methodology|CLEAR Methodology]]
+- [[01 - Literature & Theory/Label-Set Guarantee - Scope and Limits|Label-Set Guarantee: Scope and Limits]] — interventions, residual CBMs, and what stays valid
+- [[06 - Papers & Planning/Paper Split - CLeaR vs CVPR|Paper Split: CLeaR vs CVPR]]

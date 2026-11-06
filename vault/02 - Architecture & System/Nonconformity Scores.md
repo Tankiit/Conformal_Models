@@ -30,5 +30,6 @@ The choice of non-conformity score function governs the geometric shape, adaptiv
 
 ## 🔗 Related Notes
 - [[01 - Literature & Theory/Conformal Prediction Foundations|Conformal Prediction Theory]]
+- [[01 - Literature & Theory/Joint Concept Coverage|Joint Concept Coverage]] — which score constructions give which joint guarantee
 - [[02 - Architecture & System/Pipeline Architecture|Pipeline Architecture]]
 - [[00 - Dashboards/Audit Dashboard|Audit Dashboard]]

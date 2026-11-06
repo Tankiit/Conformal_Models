@@ -1,0 +1,1210 @@
+{
+  "heads": {
+    "probe_test_acc": 0.8945460915565491,
+    "cbm112_test_acc": 0.8688298463821411,
+    "concept112_micro_acc": 0.9523013234138489,
+    "cbm312_test_acc": 0.8724542856216431,
+    "concept312_micro_acc": 0.8730090856552124
+  },
+  "check1": {
+    "empty_set_diagnostic": {
+      "p_empty": 0.06198723614215851,
+      "top1_acc_given_empty": 0.970588207244873,
+      "cov_nofill": 0.8992707133293152,
+      "cov_with_fill_approx": 0.9594347937285974
+    },
+    "same_pool_n600": {
+      "mean_cov": 0.9014170205593109,
+      "sd_cov": 0.012849571878897258,
+      "beta_sd": 0.0122180399297017,
+      "mean_size": 2.6289680337905885
+    },
+    "same_pool_n3600": {
+      "mean_cov": 0.8994758421182633,
+      "sd_cov": 0.008508089472484283,
+      "beta_sd": 0.004997994688870135,
+      "mean_size": 2.5695031762123106
+    },
+    "official_val_cal_n600": {
+      "mean_cov": 0.907145319879055,
+      "sd_cov": 0.0088245163123111,
+      "mean_size": 2.7500388622283936
+    },
+    "official_trainholdout_cal_n600": {
+      "mean_cov": 0.8948351725935936,
+      "sd_cov": 0.008290668276201577,
+      "mean_size": 2.574555569887161
+    }
+  },
+  "gate": {
+    "table": [
+      {
+        "method": "bonferroni",
+        "alpha": 0.02,
+        "joint_cov": 1.0,
+        "joint_cov_sd": 0.0,
+        "ambiguous": 112.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 1.0
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.03,
+        "joint_cov": 1.0,
+        "joint_cov_sd": 0.0,
+        "ambiguous": 112.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 1.0
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.05,
+        "joint_cov": 0.9824977278709411,
+        "joint_cov_sd": 0.0035987074235810206,
+        "ambiguous": 98.59573822021484,
+        "ambiguous_sd": 1.7091188124697683,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9999088406562805
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.07,
+        "joint_cov": 0.9688468545675277,
+        "joint_cov_sd": 0.004069746118362665,
+        "ambiguous": 87.14024658203125,
+        "ambiguous_sd": 1.5266101589286865,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9994302570819855
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.1,
+        "joint_cov": 0.9547174096107482,
+        "joint_cov_sd": 0.0053100309795825005,
+        "ambiguous": 78.2759796142578,
+        "ambiguous_sd": 1.4355428764139981,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9985642611980439
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.13,
+        "joint_cov": 0.9418869704008103,
+        "joint_cov_sd": 0.00536302863997455,
+        "ambiguous": 71.44922409057617,
+        "ambiguous_sd": 1.3546306035217177,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9979033797979355
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.16,
+        "joint_cov": 0.9287374705076218,
+        "joint_cov_sd": 0.006826602760062709,
+        "ambiguous": 65.52276706695557,
+        "ambiguous_sd": 1.5612292248485677,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9970829635858536
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.2,
+        "joint_cov": 0.9158386588096619,
+        "joint_cov_sd": 0.008134610174768225,
+        "ambiguous": 60.422698211669925,
+        "ambiguous_sd": 1.4914613634033027,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9963992714881897
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.25,
+        "joint_cov": 0.8901777505874634,
+        "joint_cov_sd": 0.008351602812439237,
+        "ambiguous": 52.137100791931154,
+        "ambiguous_sd": 1.1108513053216778,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9952370136976242
+      },
+      {
+        "method": "bonferroni",
+        "alpha": 0.3,
+        "joint_cov": 0.8768459469079971,
+        "joint_cov_sd": 0.008878646180400965,
+        "ambiguous": 48.91750202178955,
+        "ambiguous_sd": 0.9812476027926926,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.994735649228096
+      },
+      {
+        "method": "induced",
+        "alpha": 0.02,
+        "joint_cov": 0.9818824112415314,
+        "joint_cov_sd": 0.0035740148845350723,
+        "ambiguous": 25.918003463745116,
+        "ambiguous_sd": 1.315100995252001,
+        "label_cov": 0.9801276236772537,
+        "label_size": 7.8840930461883545,
+        "p_at_most_8": 0.9869872391223907
+      },
+      {
+        "method": "induced",
+        "alpha": 0.03,
+        "joint_cov": 0.9731084764003753,
+        "joint_cov_sd": 0.003691605821514185,
+        "ambiguous": 19.91912031173706,
+        "ambiguous_sd": 0.6791038939621478,
+        "label_cov": 0.9703281641006469,
+        "label_size": 5.785893344879151,
+        "p_at_most_8": 0.9786918938159943
+      },
+      {
+        "method": "induced",
+        "alpha": 0.05,
+        "joint_cov": 0.9526891529560089,
+        "joint_cov_sd": 0.005670133509826996,
+        "ambiguous": 14.038012742996216,
+        "ambiguous_sd": 0.6323259583080773,
+        "label_cov": 0.9504102140665054,
+        "label_size": 3.915246140956879,
+        "p_at_most_8": 0.96039197742939
+      },
+      {
+        "method": "induced",
+        "alpha": 0.07,
+        "joint_cov": 0.9319279849529266,
+        "joint_cov_sd": 0.007994213281785756,
+        "ambiguous": 11.113628053665161,
+        "ambiguous_sd": 0.47968707818556894,
+        "label_cov": 0.9301276206970215,
+        "label_size": 3.0757976531982423,
+        "p_at_most_8": 0.942593440413475
+      },
+      {
+        "method": "induced",
+        "alpha": 0.1,
+        "joint_cov": 0.9002278923988343,
+        "joint_cov_sd": 0.00957362620438206,
+        "ambiguous": 8.544166016578675,
+        "ambiguous_sd": 0.4202902543648877,
+        "label_cov": 0.8979489505290985,
+        "label_size": 2.3855515122413635,
+        "p_at_most_8": 0.914402911067009
+      },
+      {
+        "method": "induced",
+        "alpha": 0.13,
+        "joint_cov": 0.8689607977867126,
+        "joint_cov_sd": 0.011432480949778124,
+        "ambiguous": 6.874954438209533,
+        "ambiguous_sd": 0.39586075494524753,
+        "label_cov": 0.8667730152606964,
+        "label_size": 1.9807429254055022,
+        "p_at_most_8": 0.8867137551307678
+      },
+      {
+        "method": "induced",
+        "alpha": 0.16,
+        "joint_cov": 0.8390382915735245,
+        "joint_cov_sd": 0.010568272789864847,
+        "ambiguous": 5.698290753364563,
+        "ambiguous_sd": 0.29724341744672333,
+        "label_cov": 0.8368732899427413,
+        "label_size": 1.7146991789340973,
+        "p_at_most_8": 0.8605970829725266
+      },
+      {
+        "method": "induced",
+        "alpha": 0.2,
+        "joint_cov": 0.8003646343946457,
+        "joint_cov_sd": 0.01027295039420033,
+        "ambiguous": 4.599931621551514,
+        "ambiguous_sd": 0.25931164914808474,
+        "label_cov": 0.7982224255800248,
+        "label_size": 1.4704876780509948,
+        "p_at_most_8": 0.8256836831569672
+      },
+      {
+        "method": "induced",
+        "alpha": 0.25,
+        "joint_cov": 0.7494530558586121,
+        "joint_cov_sd": 0.014307762413134273,
+        "ambiguous": 3.5303327441215515,
+        "ambiguous_sd": 0.2551682253370691,
+        "label_cov": 0.7477438479661942,
+        "label_size": 1.2537830352783204,
+        "p_at_most_8": 0.7789653599262237
+      },
+      {
+        "method": "induced",
+        "alpha": 0.3,
+        "joint_cov": 0.6964448511600494,
+        "joint_cov_sd": 0.014959999427505168,
+        "ambiguous": 2.7088651061058044,
+        "ambiguous_sd": 0.22021533827947162,
+        "label_cov": 0.6952825874090195,
+        "label_size": 1.0868732988834382,
+        "p_at_most_8": 0.7292844116687774
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.02,
+        "joint_cov": 0.9803099364042283,
+        "joint_cov_sd": 0.004062919455707779,
+        "ambiguous": 98.10216407775879,
+        "ambiguous_sd": 1.1611284729310494,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9997037321329116
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.03,
+        "joint_cov": 0.9706700086593628,
+        "joint_cov_sd": 0.0039083105351674415,
+        "ambiguous": 90.44833641052246,
+        "ambiguous_sd": 1.040929359026464,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9991795718669891
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.05,
+        "joint_cov": 0.9504329890012742,
+        "joint_cov_sd": 0.004277799311471088,
+        "ambiguous": 78.80307655334472,
+        "ambiguous_sd": 0.8387533160825997,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9978350132703782
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.07,
+        "joint_cov": 0.9308340966701507,
+        "joint_cov_sd": 0.00525221743500768,
+        "ambiguous": 68.74325485229492,
+        "ambiguous_sd": 1.1229221538137018,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9965587973594665
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.1,
+        "joint_cov": 0.8999088406562805,
+        "joint_cov_sd": 0.007858086916961072,
+        "ambiguous": 57.72825908660889,
+        "ambiguous_sd": 0.9586134923986589,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9950319051742553
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.13,
+        "joint_cov": 0.8692798554897309,
+        "joint_cov_sd": 0.008589649252807929,
+        "ambiguous": 48.79129467010498,
+        "ambiguous_sd": 0.8379890138487249,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9937101185321808
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.16,
+        "joint_cov": 0.839516869187355,
+        "joint_cov_sd": 0.010070656071472272,
+        "ambiguous": 42.82848701477051,
+        "ambiguous_sd": 0.729451825564885,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9927073806524277
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.2,
+        "joint_cov": 0.8002051025629043,
+        "joint_cov_sd": 0.010266149072512061,
+        "ambiguous": 36.25444393157959,
+        "ambiguous_sd": 0.5083263764067144,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9901321738958359
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.25,
+        "joint_cov": 0.7487693727016449,
+        "joint_cov_sd": 0.010697540375054727,
+        "ambiguous": 30.151595401763917,
+        "ambiguous_sd": 0.4761958940242925,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9879216074943542
+      },
+      {
+        "method": "topm_m0",
+        "alpha": 0.3,
+        "joint_cov": 0.699863263964653,
+        "joint_cov_sd": 0.012198200147009636,
+        "ambiguous": 25.439380359649657,
+        "ambiguous_sd": 0.34028119231633747,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9841841489076615
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.02,
+        "joint_cov": 0.953258889913559,
+        "joint_cov_sd": 0.005413102281491815,
+        "ambiguous": 80.25164070129395,
+        "ambiguous_sd": 1.6375045632109901,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9978805899620056
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.03,
+        "joint_cov": 0.9333865135908127,
+        "joint_cov_sd": 0.0055435487477628635,
+        "ambiguous": 69.85095710754395,
+        "ambiguous_sd": 1.705350898990519,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9965360075235367
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.05,
+        "joint_cov": 0.8875797688961029,
+        "joint_cov_sd": 0.007986411963150378,
+        "ambiguous": 53.89557857513428,
+        "ambiguous_sd": 1.262134525701464,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9943026423454284
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.07,
+        "joint_cov": 0.8470829576253891,
+        "joint_cov_sd": 0.010162658937310167,
+        "ambiguous": 44.165747261047365,
+        "ambiguous_sd": 0.8594204925272253,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.992912483215332
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.1,
+        "joint_cov": 0.7940747439861298,
+        "joint_cov_sd": 0.011829968529532074,
+        "ambiguous": 35.4265495300293,
+        "ambiguous_sd": 0.8873488568608635,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9897675454616547
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.13,
+        "joint_cov": 0.745943483710289,
+        "joint_cov_sd": 0.012278736726655767,
+        "ambiguous": 29.898746490478516,
+        "ambiguous_sd": 0.6263899379514913,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9877392888069153
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.16,
+        "joint_cov": 0.7007292598485947,
+        "joint_cov_sd": 0.014298544797273672,
+        "ambiguous": 25.48566541671753,
+        "ambiguous_sd": 0.5987363792126026,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9840246230363846
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.2,
+        "joint_cov": 0.646490427851677,
+        "joint_cov_sd": 0.012722470894925536,
+        "ambiguous": 21.358090209960938,
+        "ambiguous_sd": 0.3874311165551032,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9789653599262238
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.25,
+        "joint_cov": 0.5818140357732773,
+        "joint_cov_sd": 0.01432836993401997,
+        "ambiguous": 17.25909290313721,
+        "ambiguous_sd": 0.4126170562091196,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9721741080284119
+      },
+      {
+        "method": "topm_m1",
+        "alpha": 0.3,
+        "joint_cov": 0.518938010931015,
+        "joint_cov_sd": 0.012073209077009223,
+        "ambiguous": 14.091636323928833,
+        "ambiguous_sd": 0.2693774997331155,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9656107574701309
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.02,
+        "joint_cov": 0.2813354581594467,
+        "joint_cov_sd": 0.013936159024986267,
+        "ambiguous": 5.084320878982544,
+        "ambiguous_sd": 0.4684231025375094,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.8956244319677353
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.03,
+        "joint_cov": 0.2135141298174858,
+        "joint_cov_sd": 0.013639028094411063,
+        "ambiguous": 2.5202825903892516,
+        "ambiguous_sd": 0.521279296254894,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.8496581554412842
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.05,
+        "joint_cov": 0.1358705572783947,
+        "joint_cov_sd": 0.00733508130839954,
+        "ambiguous": 0.00020510482136160135,
+        "ambiguous_sd": 0.0008940311891481827,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.7690747439861297
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.07,
+        "joint_cov": 0.10127620808780194,
+        "joint_cov_sd": 0.0037491208085605764,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.7171604365110398
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.1,
+        "joint_cov": 0.06784412004053593,
+        "joint_cov_sd": 0.00436052862330777,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.6480628967285156
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.13,
+        "joint_cov": 0.048883318156003955,
+        "joint_cov_sd": 0.003437730779770624,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.5953965365886689
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.16,
+        "joint_cov": 0.03616681825369596,
+        "joint_cov_sd": 0.002689828232564652,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.541226077079773
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.2,
+        "joint_cov": 0.024430264439433812,
+        "joint_cov_sd": 0.0020147709860350456,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.4814266189932823
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.25,
+        "joint_cov": 0.016020966321229936,
+        "joint_cov_sd": 0.0015066897913704198,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.4185505911707878
+      },
+      {
+        "method": "topm_m16",
+        "alpha": 0.3,
+        "joint_cov": 0.011075660912320017,
+        "joint_cov_sd": 0.0013528552728396344,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.35628987699747083
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.02,
+        "joint_cov": 0.9245442122220993,
+        "joint_cov_sd": 0.006879950276399749,
+        "ambiguous": 65.7896535873413,
+        "ambiguous_sd": 2.165922676760976,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9959662705659866
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.03,
+        "joint_cov": 0.8847310841083527,
+        "joint_cov_sd": 0.007736195286526795,
+        "ambiguous": 52.98017349243164,
+        "ambiguous_sd": 1.2662009438046526,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.994074746966362
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.05,
+        "joint_cov": 0.8225615322589874,
+        "joint_cov_sd": 0.010322481229523369,
+        "ambiguous": 39.695282745361325,
+        "ambiguous_sd": 0.8929361623975328,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9915451228618621
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.07,
+        "joint_cov": 0.7602552443742752,
+        "joint_cov_sd": 0.010480162155653491,
+        "ambiguous": 31.4446213722229,
+        "ambiguous_sd": 0.6493367231090431,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9884457588195801
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.1,
+        "joint_cov": 0.6961941599845887,
+        "joint_cov_sd": 0.011567045438586452,
+        "ambiguous": 25.17568349838257,
+        "ambiguous_sd": 0.4282776573320289,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9838878840208054
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.13,
+        "joint_cov": 0.6420464843511582,
+        "joint_cov_sd": 0.013352567154543277,
+        "ambiguous": 21.04924774169922,
+        "ambiguous_sd": 0.3830063007873214,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9785095691680908
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.16,
+        "joint_cov": 0.591317230463028,
+        "joint_cov_sd": 0.011773361304048973,
+        "ambiguous": 17.76811752319336,
+        "ambiguous_sd": 0.22446940388348954,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9733819484710693
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.2,
+        "joint_cov": 0.524840472638607,
+        "joint_cov_sd": 0.012970773406586762,
+        "ambiguous": 14.336235237121581,
+        "ambiguous_sd": 0.2656624784418331,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9661804914474488
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.25,
+        "joint_cov": 0.4589790299534798,
+        "joint_cov_sd": 0.012185843612287648,
+        "ambiguous": 11.423108434677124,
+        "ambiguous_sd": 0.23835518515781182,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9548769384622574
+      },
+      {
+        "method": "topm_m2",
+        "alpha": 0.3,
+        "joint_cov": 0.3953509569168091,
+        "joint_cov_sd": 0.011930348185903227,
+        "ambiguous": 9.070897817611694,
+        "ambiguous_sd": 0.18455809517460764,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9371239751577377
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.02,
+        "joint_cov": 0.038354603387415406,
+        "joint_cov_sd": 0.0030787662206484324,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.5490200579166412
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.03,
+        "joint_cov": 0.024840474128723145,
+        "joint_cov_sd": 0.002460835740583236,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.48507292866706847
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.05,
+        "joint_cov": 0.013764813169836998,
+        "joint_cov_sd": 0.001356688669102544,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.3873518705368042
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.07,
+        "joint_cov": 0.00838650860823691,
+        "joint_cov_sd": 0.0013854772282714859,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.3222196906805038
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.1,
+        "joint_cov": 0.0035551503824535757,
+        "joint_cov_sd": 0.0009407368418794555,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.23981312587857245
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.13,
+        "joint_cov": 0.0012989972863579168,
+        "joint_cov_sd": 0.000724617751111377,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.18644029274582863
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.16,
+        "joint_cov": 0.0004557885113172233,
+        "joint_cov_sd": 0.0003530522627448553,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.1532360978424549
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.2,
+        "joint_cov": 0.00020510483009275048,
+        "joint_cov_sd": 0.00022675192136908283,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.1162260714918375
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.25,
+        "joint_cov": 0.0,
+        "joint_cov_sd": 0.0,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.08215587995946408
+      },
+      {
+        "method": "topm_m28",
+        "alpha": 0.3,
+        "joint_cov": 0.0,
+        "joint_cov_sd": 0.0,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.05950319077819586
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.02,
+        "joint_cov": 0.8483819454908371,
+        "joint_cov_sd": 0.014414937938542226,
+        "ambiguous": 44.52967166900635,
+        "ambiguous_sd": 2.2508973461397845,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9930264323949813
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.03,
+        "joint_cov": 0.7832953453063964,
+        "joint_cov_sd": 0.011554466204466816,
+        "ambiguous": 34.054785919189456,
+        "ambiguous_sd": 1.0498497134089662,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9892205953598022
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.05,
+        "joint_cov": 0.6849361926317215,
+        "joint_cov_sd": 0.014421853644364224,
+        "ambiguous": 24.237784767150877,
+        "ambiguous_sd": 0.8234971092871077,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9829079359769821
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.07,
+        "joint_cov": 0.6195305347442627,
+        "joint_cov_sd": 0.011470012093701553,
+        "ambiguous": 19.53753423690796,
+        "ambiguous_sd": 0.414140987734725,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.975979945063591
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.1,
+        "joint_cov": 0.5391522407531738,
+        "joint_cov_sd": 0.012354225463650679,
+        "ambiguous": 14.958568811416626,
+        "ambiguous_sd": 0.39926806356372957,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9670692831277847
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.13,
+        "joint_cov": 0.4626709222793579,
+        "joint_cov_sd": 0.010337363742767234,
+        "ambiguous": 11.563764762878417,
+        "ambiguous_sd": 0.21398928401397602,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9554922491312027
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.16,
+        "joint_cov": 0.4060164108872414,
+        "joint_cov_sd": 0.011891273799003173,
+        "ambiguous": 9.528441286087036,
+        "ambiguous_sd": 0.2558689166936121,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9410209655761719
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.2,
+        "joint_cov": 0.3460118517279625,
+        "joint_cov_sd": 0.010233721263717556,
+        "ambiguous": 7.271809458732605,
+        "ambiguous_sd": 0.12557280090873277,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9229261636734009
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.25,
+        "joint_cov": 0.2874202370643616,
+        "joint_cov_sd": 0.010206405972187771,
+        "ambiguous": 5.318026447296143,
+        "ambiguous_sd": 0.1075886337811749,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.8986554175615311
+      },
+      {
+        "method": "topm_m4",
+        "alpha": 0.3,
+        "joint_cov": 0.24528258964419364,
+        "joint_cov_sd": 0.007925054148375535,
+        "ambiguous": 3.7724703907966615,
+        "ambiguous_sd": 0.10046137407382494,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.8750227928161621
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.02,
+        "joint_cov": 0.6546262532472611,
+        "joint_cov_sd": 0.014374960620184415,
+        "ambiguous": 21.938605308532715,
+        "ambiguous_sd": 0.7741009871029372,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.979854142665863
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.03,
+        "joint_cov": 0.568938010931015,
+        "joint_cov_sd": 0.014877754738677248,
+        "ambiguous": 16.579854249954224,
+        "ambiguous_sd": 0.6692895996110362,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9705104798078537
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.05,
+        "joint_cov": 0.43600729256868365,
+        "joint_cov_sd": 0.014061203989550346,
+        "ambiguous": 10.68336362838745,
+        "ambiguous_sd": 0.3616255973573249,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9506381064653396
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.07,
+        "joint_cov": 0.36941659152507783,
+        "joint_cov_sd": 0.013454254649480463,
+        "ambiguous": 8.09653606414795,
+        "ambiguous_sd": 0.3426233959069601,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9296718329191208
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.1,
+        "joint_cov": 0.28764813095331193,
+        "joint_cov_sd": 0.009577958539314452,
+        "ambiguous": 5.3511394500732425,
+        "ambiguous_sd": 0.1971861381713732,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.8992251574993133
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.13,
+        "joint_cov": 0.23623518869280816,
+        "joint_cov_sd": 0.0072398670555415216,
+        "ambiguous": 3.3963992834091186,
+        "ambiguous_sd": 0.14680977608357595,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.8678441166877746
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.16,
+        "joint_cov": 0.20193710103631018,
+        "joint_cov_sd": 0.00874053737440522,
+        "ambiguous": 2.0744986474514007,
+        "ambiguous_sd": 0.15563457732720856,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.8392661780118942
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.2,
+        "joint_cov": 0.1590246118605137,
+        "joint_cov_sd": 0.007122415436926086,
+        "ambiguous": 0.44810848087072375,
+        "ambiguous_sd": 0.11204782403479212,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.7975843220949173
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.25,
+        "joint_cov": 0.11829990856349468,
+        "joint_cov_sd": 0.005443716644946027,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.7458523243665696
+      },
+      {
+        "method": "topm_m8",
+        "alpha": 0.3,
+        "joint_cov": 0.09072470292448997,
+        "joint_cov_sd": 0.0042304322003065544,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.6951002717018128
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.02,
+        "joint_cov": 0.3885369211435318,
+        "joint_cov_sd": 0.009669244075314387,
+        "ambiguous": 11.149840354919434,
+        "ambiguous_sd": 0.17533543803735976,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.9453281670808792
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.03,
+        "joint_cov": 0.2530765727162361,
+        "joint_cov_sd": 0.008105958211664183,
+        "ambiguous": 7.021581602096558,
+        "ambiguous_sd": 0.13247474890102512,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.8936645358800888
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.05,
+        "joint_cov": 0.1105742935091257,
+        "joint_cov_sd": 0.006669791546166823,
+        "ambiguous": 2.7124202251434326,
+        "ambiguous_sd": 0.07618139321182689,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.7739516913890838
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.07,
+        "joint_cov": 0.045829535089433195,
+        "joint_cov_sd": 0.004098233537128335,
+        "ambiguous": 0.8992023646831513,
+        "ambiguous_sd": 0.05522912998228236,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.6347994565963745
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.1,
+        "joint_cov": 0.011668185936287045,
+        "joint_cov_sd": 0.0020606479978515935,
+        "ambiguous": 0.05838650893419981,
+        "ambiguous_sd": 0.009518126355429181,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.45173199772834777
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.13,
+        "joint_cov": 0.0019143117708154023,
+        "joint_cov_sd": 0.0008478156397766937,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.28313582241535185
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.16,
+        "joint_cov": 0.000273473106790334,
+        "joint_cov_sd": 0.0003023358951587771,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.16027802899479865
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.2,
+        "joint_cov": 0.0,
+        "joint_cov_sd": 0.0,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.05995897892862558
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.25,
+        "joint_cov": 0.0,
+        "joint_cov_sd": 0.0,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.011531449388712645
+      },
+      {
+        "method": "uncorrected",
+        "alpha": 0.3,
+        "joint_cov": 0.0,
+        "joint_cov_sd": 0.0,
+        "ambiguous": 0.0,
+        "ambiguous_sd": 0.0,
+        "label_cov": NaN,
+        "label_size": NaN,
+        "p_at_most_8": 0.0022333637345582245
+      }
+    ],
+    "matched_at_090": {
+      "bonferroni": 55.30858652750391,
+      "topm_m0": 57.76072833390057,
+      "topm_m1": 58.2217862120977,
+      "topm_m2": 57.892796123492246,
+      "topm_m4": 44.52967166900635,
+      "topm_m8": 21.938605308532715,
+      "induced": 8.531999851622338
+    }
+  },
+  "table": {
+    "K312_bonferroni": {
+      "official": {
+        "joint_cov": 0.9171556830406189,
+        "avg_misses": 0.11114946752786636,
+        "ambiguous": 299.878662109375,
+        "empty_rate": 0.0
+      },
+      "same_pool": {
+        "joint_cov": 0.9270738363265991,
+        "avg_misses": 0.1057429388165474,
+        "ambiguous": 300.6650085449219,
+        "empty_rate": 0.0
+      }
+    },
+    "K312_global_max": {
+      "official": {
+        "joint_cov": 0.8921297788619995,
+        "avg_misses": 0.1427338570356369,
+        "ambiguous": 309.3860778808594,
+        "empty_rate": 0.0
+      },
+      "same_pool": {
+        "joint_cov": 0.8979033827781677,
+        "avg_misses": 0.17000912129878998,
+        "ambiguous": 306.5246276855469,
+        "empty_rate": 0.0
+      }
+    },
+    "K112_bonferroni": {
+      "official": {
+        "joint_cov": 0.9516741633415222,
+        "avg_misses": 0.08819468319416046,
+        "ambiguous": 92.73006439208984,
+        "empty_rate": 0.0
+      },
+      "same_pool": {
+        "joint_cov": 0.9603464007377625,
+        "avg_misses": 0.0765724703669548,
+        "ambiguous": 80.17729949951172,
+        "empty_rate": 0.0
+      }
+    },
+    "K112_global_max": {
+      "official": {
+        "joint_cov": 0.9038660526275635,
+        "avg_misses": 0.18933379650115967,
+        "ambiguous": 89.38211822509766,
+        "empty_rate": 0.0
+      },
+      "same_pool": {
+        "joint_cov": 0.9129443764686584,
+        "avg_misses": 0.21103008091449738,
+        "ambiguous": 59.24658203125,
+        "empty_rate": 0.0
+      }
+    }
+  }
+}

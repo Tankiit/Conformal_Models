@@ -58,3 +58,5 @@ A high leakage gap indicates that the concept bottleneck is leaky and interventi
 - [[00 - Dashboards/Audit Dashboard|Audit Dashboard]]
 - [[03 - Experiments/CLEAR_Audit_Shapes3D|Shapes3D Audit Results]]
 - [[01 - Literature & Theory/Conformal Prediction Foundations|Conformal Prediction Theory]]
+- [[01 - Literature & Theory/Leakage One-Sided Claim|Leakage: the One-Sided Claim]] — the precise (one-sided) leakage logic behind the CLeaR paper
+- [[06 - Papers & Planning/Paper Split - CLeaR vs CVPR|Paper Split: CLeaR vs CVPR]]
