@@ -240,7 +240,9 @@ def evaluate_intervention_curve(
             total_samples += len(y_true)
 
             if calibrator is not None:
-                sets = calibrator.predict(logits_y)
+                # No-fill: this loop reports coverage, and filling empty sets with
+                # top-1 would inflate it by P(empty) * P(top1 | empty).
+                sets = calibrator.predict(logits_y, fill_empty=False)
                 total_covered += int(sets.contains(y_true).sum().item())
                 total_set_size += float(sets.sizes.sum().item())
 

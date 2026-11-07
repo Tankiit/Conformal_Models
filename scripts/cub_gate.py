@@ -26,9 +26,18 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ccm.conformal import compute_conformal_quantile
+from ccm.conformal import (
+    compute_conformal_quantile,
+    conformal_quantile_per_column,
+    induced_concept_sets,
+    m_plus_one_score,
+)
 from ccm.scores import APSScore
 from ccm.utils import set_seed
+
+# Library functions are the single source of truth; local names keep call sites stable.
+quantile_per_column = conformal_quantile_per_column
+image_score_topm = m_plus_one_score
 
 CACHE = PROJECT_ROOT / "data_cache"
 RESULTS_JSON = CACHE / "gate_results.json"
@@ -175,22 +184,7 @@ def load_heads(data: Data) -> dict:
 
 
 # ─────────────────────── conformal machinery ───────────────────────
-
-def quantile_per_column(scores: torch.Tensor, alpha: float) -> torch.Tensor:
-    """Exact per-concept quantiles: q_j = s_(k), k = ceil((n+1)(1-a)); +inf if k > n."""
-    n = scores.shape[0]
-    k = math.ceil((n + 1) * (1.0 - alpha))
-    if k > n:
-        return torch.full((scores.shape[1],), float("inf"))
-    sorted_scores, _ = torch.sort(scores, dim=0)
-    return sorted_scores[k - 1, :]
-
-
-def image_score_topm(per_concept_true_scores: torch.Tensor, m: int) -> torch.Tensor:
-    """(m+1)-th largest per-concept score per image; m=0 -> global max."""
-    sorted_desc, _ = torch.sort(per_concept_true_scores, dim=-1, descending=True)
-    idx = min(m, sorted_desc.shape[1] - 1)
-    return sorted_desc[:, idx]
+# quantile_per_column / image_score_topm: imported from ccm.conformal (aliased above).
 
 
 def concept_metrics(concept_probs: torch.Tensor, truth: torch.Tensor, thresholds) -> dict:
@@ -248,13 +242,12 @@ def aps_empty_set_diagnostic(label_logits_cal, y_cal, label_logits_eval, y_eval,
 
 
 def induced_sets(mask: torch.Tensor, class_concept: torch.Tensor):
-    """mask: (N,200) label-set mask; class_concept: (200,K) in {0,1}."""
-    N, C = mask.shape
-    K = class_concept.shape[1]
-    any1 = (mask.float() @ class_concept) > 0        # some class in set has concept=1
-    any0 = (mask.float() @ (1 - class_concept)) > 0  # some class in set has concept=0
+    """mask: (N,200) label-set mask; class_concept: (200,K) in {0,1}.
+    Thin wrapper over ccm.conformal.induced_concept_sets keeping the gate script's
+    (ambiguous, any1, any0) return convention."""
+    cps = induced_concept_sets(mask, class_concept)
+    any1, any0 = cps.binary_mask[..., 1], cps.binary_mask[..., 0]
     ambiguous = (any1 & any0).sum(1).float()
-    # miss: truth not in induced set. induced set = {1} if any1&~any0, {0} if any0&~any1, both else
     return ambiguous, any1, any0
 
 

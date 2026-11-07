@@ -187,7 +187,7 @@ def train_cbm(config_path: str, args: argparse.Namespace):
     concept_acc = c_metrics["micro_acc"]
 
     # Conformal metrics
-    pred_sets = calibrator.predict(test_y_logits, alpha=alpha, fill_empty=conf_cfg.get("fill_empty", True))
+    pred_sets = calibrator.predict(test_y_logits, alpha=alpha, fill_empty=conf_cfg.get("fill_empty", False))
     coverage = empirical_coverage(pred_sets, test_y_trues)
     avg_size = average_set_size(pred_sets)
 

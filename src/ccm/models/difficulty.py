@@ -72,9 +72,16 @@ class SampleDifficultyEstimator(nn.Module):
     def assign_strata(self, difficulties: torch.Tensor) -> torch.Tensor:
         """
         Assigns each difficulty score to a discrete group index {0, 1, ..., num_strata - 1}.
+        Strata must already be fitted (fit_strata on CALIBRATION data); fitting here
+        on the data being assigned (e.g. the test set) would silently calibrate the
+        strata boundaries on the test distribution and void the conditional guarantee.
         """
         if self.strata_quantiles is None:
-            self.fit_strata(difficulties)
+            raise RuntimeError(
+                "Strata not fitted. Call fit_strata() on calibration difficulties "
+                "before assign_strata(); auto-fitting on the input would use the "
+                "test distribution."
+            )
 
         diffs = difficulties.cpu()
         strata = torch.zeros(diffs.shape[0], dtype=torch.long)

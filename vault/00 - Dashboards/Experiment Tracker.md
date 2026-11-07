@@ -7,6 +7,8 @@ tags: [dashboard, tracker, experiments]
 
 This dashboard tracks all training and evaluation runs for Conformal Concept Models. Rows are automatically added by the scripts (`clear_train.py`, `cvpr_pilot.py`, `clear_audit.py`, `nn_agreement.py`).
 
+> [!NOTE] Provenance: the canonical CVPR numbers are in [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot 2026-11-06]]. Rows below it are early pilot/synthetic runs — the four `cvpr_pilot_cub` runs were broken (bad heads; e.g. set size 73) and the two hand-added rows at the bottom are not from logs. Do not cite any row except the `cub-gate` row.
+
 | Date | Run / Note Link | Dataset | Task Acc | Concept Acc | Conformal Cov | Avg Set Size |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 <!-- RUNS_TABLE_BODY -->
