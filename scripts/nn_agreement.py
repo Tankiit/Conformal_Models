@@ -99,7 +99,7 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
     y_tensor = torch.cat(all_y, dim=0)
 
     # Compute NN leakage metrics (stratified K-fold, fold-fitted scaling, signed gap,
-    # random-projection control -- see ccm.metrics.nn_leakage_score docstring)
+    # embedding-null calibration -- see ccm.metrics.nn_leakage_score docstring)
     k = args.neighbors
     metrics = nn_leakage_score(
         z_tensor, c_tensor, y_tensor,
@@ -116,8 +116,9 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
     print(f"  k-NN Accuracy (Concepts c)   : {metrics['nn_acc_concept']:.4f}")
     print(f"  Leakage Gap (z - c), SIGNED  : {metrics['leakage_gap']:+.4f}  "
           f"(95% CI [{metrics['leakage_gap_ci_lo']:+.4f}, {metrics['leakage_gap_ci_hi']:+.4f}])")
-    print(f"  Control gap (z - proj(z))    : {metrics['control_gap']:+.4f}   [geometry null]")
-    print(f"  Excess gap vs control        : {metrics['excess_gap_vs_control']:+.4f}   [leakage evidence]")
+    print(f"  Null band (z from c only)    : {metrics['null_gap_mean']:+.4f} ± {metrics['null_gap_sd']:.4f}")
+    print(f"  Gap vs null, z-score         : {metrics['gap_vs_null_z']:+.2f}   [leakage evidence]")
+    print(f"  Projection gap (descriptive) : {metrics['projection_gap_mean']:+.4f} ± {metrics['projection_gap_sd']:.4f}")
     print(f"  Leakage Ratio (z / c)        : {metrics['leakage_ratio']:.4f}")
     print(f"  Agreement Rate [kNN(z)==kNN(c)]: {metrics['nn_agreement_rate']:.4f}")
     print(f"  Model source                 : {model_source}")
@@ -129,10 +130,11 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
     vault_dir.mkdir(parents=True, exist_ok=True)
     report_note = vault_dir / "03 - Experiments" / f"NN_Agreement_Audit_{ds_name.title()}.md"
 
+    z_stat = metrics["gap_vs_null_z"]
     leakage_status = (
-        "🔴 Severe (beyond geometry null)" if metrics["excess_gap_vs_control"] > 0.15
-        else "🟡 Moderate (beyond geometry null)" if metrics["excess_gap_vs_control"] > 0.05
-        else "🟢 No evidence beyond geometry null"
+        "🔴 Severe (gap beyond null)" if z_stat > 4
+        else "🟡 Moderate (gap beyond null)" if z_stat > 2
+        else "🟢 Within the null band"
     )
     quick_train_warn = (
         "> [!FAILURE] INVALID for paper claims — model was quick-trained (2 epochs), not loaded from a checkpoint.\n"
@@ -156,15 +158,16 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
         "| :--- | :--- | :--- | :--- |",
         f"| **k-NN Accuracy (Latent $z$)** | `{metrics['nn_acc_latent']:.4f}` | — | Latent Fidelity |",
         f"| **k-NN Accuracy (Concepts $c$)** | `{metrics['nn_acc_concept']:.4f}` | — | Bottleneck Sufficiency |",
-        f"| **Leakage Gap ($z - c$), signed** | `{metrics['leakage_gap']:+.4f}` | vs control, not 0 | {leakage_status} |",
+        f"| **Leakage Gap ($z - c$), signed** | `{metrics['leakage_gap']:+.4f}` | null band, not 0 | {leakage_status} |",
         f"| **Gap 95% CI (folds)** | `[{metrics['leakage_gap_ci_lo']:+.4f}, {metrics['leakage_gap_ci_hi']:+.4f}]` | contains 0? | Estimation noise |",
-        f"| **Control gap ($z$ vs random proj of $z$)** | `{metrics['control_gap']:+.4f}` | geometry null | Null band |",
-        f"| **Excess gap vs control** | `{metrics['excess_gap_vs_control']:+.4f}` | `0.0000` | Leakage evidence |",
+        f"| **Null band ($z$ synthesized from $c$ only)** | `{metrics['null_gap_mean']:+.4f} ± {metrics['null_gap_sd']:.4f}` | observed gap inside? | Calibrated null |",
+        f"| **Gap vs null (z-score)** | `{z_stat:+.2f}` | $|z| \\leq 2$ | Leakage evidence |",
+        f"| **Projection gap (descriptive)** | `{metrics['projection_gap_mean']:+.4f} ± {metrics['projection_gap_sd']:.4f}` | — | $z$ vs random compression |",
         f"| **Latent vs Concept Agreement** | `{metrics['nn_agreement_rate']*100:.2f}%` | `100.0%` | Decision Consistency |",
         "\n## 2. Interpretation & Conformal Implications",
         "- **Signed gap**: negative values mean the concept bottleneck is MORE predictive than the latent (e.g., denoising); v1 clipped these to 0 and misreported them as \"no leakage\".",
-        "- **Geometry null**: judge the gap against the random-projection control (same information as $z$, $c$'s dimensionality), never against 0 — a raw gap conflates leakage with distance-geometry artifacts.",
-        "- **Intervention Reliability**: high NN agreement suggests intervening on human concepts produces predictable shifts, provided the excess gap is near the null.",
+        "- **Null band, not a subtraction**: the observed gap is judged against the distribution of gaps from $z$ re-synthesized from $c$ alone (same dimension, exactly the concepts' information). An earlier version subtracted a single random-projection gap -- algebraically that reduces to $\\mathrm{acc}_{proj} - \\mathrm{acc}_c$ (the latent's accuracy cancels) and is not calibrated.",
+        "- **Intervention Reliability**: high NN agreement suggests intervening on human concepts produces predictable shifts, provided the observed gap stays within the null band.",
         "\n## 🔗 Related Notes",
         "- [[00 - Dashboards/Audit Dashboard|Audit Dashboard]]",
         "- [[01 - Literature & Theory/Concept Bottleneck Models|CBM Theory]]",
@@ -183,8 +186,9 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
         config=cfg,
         metrics=log_metrics,
         notes=(f"k-NN leakage audit, k={k}, stratified 5-fold, model_source={model_source}. "
-               f"Signed gap {metrics['leakage_gap']:+.4f}, excess vs control "
-               f"{metrics['excess_gap_vs_control']:+.4f}."),
+               f"Signed gap {metrics['leakage_gap']:+.4f}; null band "
+               f"{metrics['null_gap_mean']:+.4f} ± {metrics['null_gap_sd']:.4f}; "
+               f"z {metrics['gap_vs_null_z']:+.2f}."),
     )
 
     print(f"[*] NN Agreement audit logged to Obsidian Vault at: {report_note}")

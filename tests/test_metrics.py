@@ -1,6 +1,8 @@
 """
-Unit tests for the v2 Nearest-Neighbor leakage diagnostic (2026-11-07 review fixes):
-signed gap, stratified K-fold with fold-fitted scaling, random-projection control.
+Unit tests for the v3 Nearest-Neighbor leakage diagnostic (2026-11-07 review rounds):
+signed gap, stratified K-fold with fold-fitted scaling, and the embedding-null
+calibration (v2's single-projection subtraction reduced algebraically to
+acc_proj - acc_c and was not a null; see nn_leakage_score docstring).
 """
 
 import pytest
@@ -26,18 +28,19 @@ def test_signed_gap_negative_when_concepts_beat_latent():
     assert m["leakage_gap"] < -0.5
 
 
-def test_positive_excess_gap_when_latent_leaks():
+def test_positive_gap_far_beyond_null_when_latent_leaks():
     torch.manual_seed(1)
     n = 600
     y = _block_classes()
     y_onehot = torch.nn.functional.one_hot(y, 3).float()
-    # Isotropic label signal: spread over all 32 dims via a random embedding, so a
-    # random projection to 6 dims preserves it (control gap ~ 0; excess == gap).
+    # Isotropic label signal in z, spread over all dims via a random embedding.
     z = y_onehot @ torch.randn(3, 32) + 0.05 * torch.randn(n, 32)
     c = torch.randn(n, 6)                         # concepts carry nothing
-    m = nn_leakage_score(z, c, y, n_neighbors=5, n_splits=3, seed=0)
+    m = nn_leakage_score(z, c, y, n_neighbors=5, n_splits=3, seed=0,
+                         n_control_projections=2, n_null_draws=4)
     assert m["leakage_gap"] > 0.5
-    assert m["excess_gap_vs_control"] > 0.3
+    # null: z re-synthesized from c alone carries nothing -> null band ~ 0
+    assert m["gap_vs_null_z"] > 5
 
 
 def test_stratified_folds_survive_class_sorted_data():
@@ -55,31 +58,31 @@ def test_stratified_folds_survive_class_sorted_data():
     assert m["nn_acc_concept"] > 0.9
 
 
-def test_control_null_when_concepts_are_projection_of_latent():
+def test_null_centered_when_concepts_match_latent():
     torch.manual_seed(3)
     n = 600
     y = _block_classes()
     y_onehot = torch.nn.functional.one_hot(y, 3).float()
     # Isotropic signal in z, then c = a fixed random projection of z to 6 dims:
-    # c holds the same information as the control projections, so the excess gap
-    # over the control band must be ~0 (no leakage beyond geometry, by symmetry).
+    # c holds everything z knows, so the observed gap must sit inside the null
+    # band (z re-synthesized from c carries the same information).
     z = y_onehot @ torch.randn(3, 24) + 0.05 * torch.randn(n, 24)
     proj = torch.randn(24, 6) / (6 ** 0.5)
     c = z @ proj                                   # same information, c's dimension
     m = nn_leakage_score(z, c, y, n_neighbors=5, n_splits=3, seed=0,
-                         n_control_projections=3)
-    # Nothing leaks beyond geometry: excess gap over the control band is ~0
-    assert abs(m["excess_gap_vs_control"]) < 0.1
+                         n_control_projections=2, n_null_draws=4)
+    assert abs(m["leakage_gap"] - m["null_gap_mean"]) < 0.05
+    assert abs(m["gap_vs_null_z"]) < 5
 
 
 def test_output_contract():
     torch.manual_seed(4)
     y = _block_classes(n_per_class=50)
     m = nn_leakage_score(torch.randn(150, 8), torch.randn(150, 4), y,
-                         n_splits=3, seed=0, n_control_projections=1)
+                         n_splits=3, seed=0, n_control_projections=1, n_null_draws=2)
     for key in ("nn_acc_latent", "nn_acc_concept", "leakage_gap", "leakage_gap_sd",
-                "leakage_ratio", "nn_agreement_rate", "control_gap",
-                "excess_gap_vs_control"):
+                "leakage_ratio", "nn_agreement_rate", "projection_gap_mean",
+                "projection_gap_sd", "null_gap_mean", "null_gap_sd", "gap_vs_null_z"):
         assert key in m
     lo, hi = m["leakage_gap_ci95"]
     assert lo <= m["leakage_gap"] <= hi

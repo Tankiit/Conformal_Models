@@ -72,7 +72,13 @@ class APSScore(NonconformityScore):
         probs_or_logits: torch.Tensor,
         targets: Optional[torch.Tensor] = None,
         random_seed: Optional[int] = None,
+        uniforms: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
+        """
+        uniforms: optional per-row randomization values in [0,1], shape [B] or [B,1].
+        Used to hold u FIXED across a pair of inputs (e.g. paired_set_change), so
+        set differences cannot be caused by independent randomization draws.
+        """
         probs = F.softmax(probs_or_logits, dim=-1) if self.from_logits else probs_or_logits
         probs = torch.clamp(probs, min=1e-12, max=1.0)
         B, K = probs.shape
@@ -85,7 +91,11 @@ class APSScore(NonconformityScore):
         rank_map.scatter_(1, sorted_indices, torch.arange(K, device=probs.device).repeat(B, 1))
 
         if self.randomized:
-            if random_seed is not None:
+            if uniforms is not None:
+                u = uniforms.to(probs.device).float().reshape(-1, 1)
+                if u.shape[0] != B:
+                    raise ValueError(f"uniforms has {u.shape[0]} rows, expected {B}")
+            elif random_seed is not None:
                 g = torch.Generator(device=probs.device).manual_seed(random_seed)
                 u = torch.rand(B, 1, device=probs.device, generator=g)
             else:

@@ -32,6 +32,7 @@ from ccm.interventions import (
     GreedyConformalInterventionPolicy,
     OracleOptimalInterventionPolicy,
     apply_interventions,
+    paired_set_change,
 )
 from ccm.utils import (
     set_seed,
@@ -64,6 +65,7 @@ __all__ = [
     "GreedyConformalInterventionPolicy",
     "OracleOptimalInterventionPolicy",
     "apply_interventions",
+    "paired_set_change",
     "set_seed",
     "load_config",
     "get_device",

@@ -135,27 +135,37 @@ def nn_leakage_score(
     n_neighbors: int = 5,
     n_splits: int = 5,
     seed: int = 0,
-    n_control_projections: int = 1,
+    n_control_projections: int = 5,
+    n_null_draws: int = 8,
 ) -> Dict[str, Any]:
     """
-    Nearest-Neighbor Concept Leakage Diagnostic (v2; fixes the 2026-11-07 review).
+    Nearest-Neighbor Concept Leakage Diagnostic (v3; 2026-11-07 review, round 3).
 
     Compares label predictability from latent representations z vs concepts c.
     The gap is SIGNED: positive = z predicts y better than c (leakage direction),
-    negative = the bottleneck is more predictive than the latent (v1 clipped this
-    to 0, reporting "no leakage" when the concepts outperformed the latent).
+    negative = the bottleneck is more predictive than the latent.
 
-    The gap is NOT judged against 0: z and c live in different dimensions and
-    scales, so part of any gap is distance-geometry artifact. The control projects
-    z randomly to dim(c) -- identical information content, c's dimensionality --
-    giving a null gap attributable to geometry alone. Leakage evidence is
-    excess_gap_vs_control = gap - control_gap, judged against the fold CI.
+    The gap is judged against a NULL DISTRIBUTION, not against 0 and not against a
+    single-draw control. (v2 subtracted a single random-projection control from the
+    observed gap; since both share acc_z, that statistic reduces algebraically to
+    acc_proj - acc_c -- the latent's accuracy cancels -- and is not a geometry null.
+    It also biased with the information geometry of z: projections of a
+    concentrated signal lose real information.)
 
-    Protocol fixes over v1:
-      - stratified K-fold (class-balanced, shuffled) instead of an index-order
-        70/30 split, which on class-sorted data tests kNN on unseen classes;
-      - standardization fitted on the train fold only (v1 fitted on all rows,
-        a mild transductive leak).
+    The null here synthesizes z_null = c embedded at z's dimension (+ jitter): it
+    carries EXACTLY the concepts' information and nothing beyond, at z's
+    dimensionality. Under "no leakage beyond concepts", the observed gap is a draw
+    from the null band; gap_vs_null_z standardizes the observed gap against it.
+    A within-c-stratum permutation of z's rows is the discrete-concept analogue of
+    the same null (same dimension, scale, marginal geometry; extra information
+    destroyed).
+
+    Protocol: stratified shuffled K-fold; standardization fitted on the train fold
+    only. projection_gap_* is kept as a secondary descriptive (z vs a random
+    dim(c) compression of z).
+
+    Cost note: each run fits (n_splits * (2 + n_control_projections + n_null_draws))
+    kNN models; lower the draw counts for large N.
     """
     z_np = representations.detach().cpu().numpy()
     c_np = concepts.detach().cpu().numpy()
@@ -167,7 +177,8 @@ def nn_leakage_score(
     projections = [rng.randn(d_z, d_c) / np.sqrt(d_c) for _ in range(max(0, n_control_projections))]
 
     accs_z, accs_c, agree = [], [], []
-    ctrl_gaps = []  # per (fold, projection): acc_z_fold - acc_ctrl, the geometry null
+    proj_gaps = []   # acc_z - acc_proj: z vs a random compression of itself (descriptive)
+    null_gaps = []   # acc(z_null) - acc_c: the gap if z knew EXACTLY the concepts (the null)
     for train_idx, test_idx in skf.split(z_np, y_np):
         # Standardization fitted on the train fold only.
         z_mu, z_sd = z_np[train_idx].mean(axis=0), z_np[train_idx].std(axis=0) + 1e-6
@@ -179,21 +190,42 @@ def nn_leakage_score(
         preds_z = KNeighborsClassifier(n_neighbors=n_neighbors).fit(z_tr, y_tr).predict(z_te)
         preds_c = KNeighborsClassifier(n_neighbors=n_neighbors).fit(c_tr, y_tr).predict(c_te)
         acc_z_f = float((preds_z == y_te).mean())
+        acc_c_f = float((preds_c == y_te).mean())
         accs_z.append(acc_z_f)
-        accs_c.append(float((preds_c == y_te).mean()))
+        accs_c.append(acc_c_f)
         agree.append(float((preds_z == preds_c).mean()))
         for proj in projections:
             acc_p = float(KNeighborsClassifier(n_neighbors=n_neighbors)
                           .fit(z_tr @ proj, y_tr)
                           .score(z_te @ proj, y_te))
-            ctrl_gaps.append(acc_z_f - acc_p)
+            proj_gaps.append(acc_z_f - acc_p)
+        for _ in range(max(0, n_null_draws)):
+            W = rng.randn(d_c, d_z) / np.sqrt(d_c)
+            jitter = 0.25
+            zn_tr = c_tr @ W + jitter * rng.randn(len(c_tr), d_z)
+            zn_te = c_te @ W + jitter * rng.randn(len(c_te), d_z)
+            acc_n = float(KNeighborsClassifier(n_neighbors=n_neighbors)
+                          .fit(zn_tr, y_tr)
+                          .score(zn_te, y_te))
+            null_gaps.append(acc_n - acc_c_f)
 
     accs_z_arr, accs_c_arr = np.asarray(accs_z), np.asarray(accs_c)
     gaps = accs_z_arr - accs_c_arr
     gap_mean = float(gaps.mean())
     gap_sd = float(gaps.std(ddof=1)) if n_splits > 1 else 0.0
     ci_half = 1.96 * gap_sd / np.sqrt(n_splits)
-    control_gap = float(np.mean(ctrl_gaps)) if ctrl_gaps else float("nan")
+
+    null_mean = float(np.mean(null_gaps)) if null_gaps else float("nan")
+    null_sd = float(np.std(null_gaps, ddof=1)) if len(null_gaps) > 1 else float("nan")
+    # Floor the denominator at the accuracy measurement resolution 1/sqrt(n_fold):
+    # in saturated regimes every null draw classifies perfectly, null_sd = 0, and a
+    # raw division would blow up (or NaN) on differences below one test-set count.
+    if null_gaps:
+        acc_resolution = 1.0 / np.sqrt(z_np.shape[0] / n_splits)
+        denom = max(null_sd, acc_resolution)
+        gap_vs_null = (gap_mean - null_mean) / denom
+    else:
+        gap_vs_null = float("nan")
 
     return {
         "nn_acc_latent": float(accs_z_arr.mean()),
@@ -203,8 +235,11 @@ def nn_leakage_score(
         "leakage_gap_ci95": [gap_mean - ci_half, gap_mean + ci_half],
         "leakage_ratio": float(accs_z_arr.mean() / (accs_c_arr.mean() + 1e-6)),
         "nn_agreement_rate": float(np.mean(agree)),
-        "control_gap": control_gap,
-        "excess_gap_vs_control": gap_mean - control_gap,
+        "projection_gap_mean": float(np.mean(proj_gaps)) if proj_gaps else float("nan"),
+        "projection_gap_sd": float(np.std(proj_gaps, ddof=1)) if len(proj_gaps) > 1 else float("nan"),
+        "null_gap_mean": null_mean,
+        "null_gap_sd": null_sd,
+        "gap_vs_null_z": gap_vs_null,  # calibrated leakage statistic
     }
 
 

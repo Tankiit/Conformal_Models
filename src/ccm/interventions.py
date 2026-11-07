@@ -6,13 +6,14 @@ budgeted test-time concept interventions.
 
 from __future__ import annotations
 import abc
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 
 from ccm.metrics import intervention_efficiency_auc
+from ccm.scores import APSScore, NonconformityScore
 
 
 class InterventionPolicy(abc.ABC):
@@ -261,4 +262,95 @@ def evaluate_intervention_curve(
         "coverages": coverages if calibrator else [],
         "avg_set_sizes": avg_set_sizes if calibrator else [],
         "auc_accuracy": auc,
+    }
+
+
+def paired_set_change(
+    cbm_model: torch.nn.Module,
+    calibrator: Any,
+    pairs: Iterable[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    use_gt_concepts: bool,
+    seed: int = 0,
+    alpha: Optional[float] = None,
+    score_fn: Optional[NonconformityScore] = None,
+) -> Dict[str, Any]:
+    """
+    Paired nuisance-flip evaluation for the CLeaR leakage test (Shapes3D U-flip
+    design; see the vault spec "Shapes3D Paired-Nuisance Generator Spec").
+
+    For each pair (x, x_flip) -- identical declared concepts C, flipped hidden
+    nuisance U -- measures whether the conformal label set changes. The APS
+    randomization u is HELD FIXED within a pair (APSScore(uniforms=...)), so set
+    changes cannot be randomization artifacts; identical inputs with shared u give
+    identical sets, so the u-pairing null is exactly zero (verify with (x, x)
+    pairs as a sanity check before the main grid).
+
+    Variants (this IS the D5 choice -- it defines what the CLeaR claim means):
+      - use_gt_concepts=True (Test 1, ground-truth-concepts-fixed): both members
+        scored through the label head with concepts fixed to c_true via the
+        intervention interface. A strict label head f(c) gives EXACTLY zero
+        set-change by construction; any change reveals an x-path into the
+        prediction (e.g. the hybrid residual channel). Isolates the label head.
+      - use_gt_concepts=False (Test 2, predicted concepts -- the whole deployed
+        pipeline): the concept head sees the whole image, wall colour included,
+        so U can move the PREDICTED concepts and change sets without label-head
+        leakage. Zero set-change is NOT the leak-free signature in this variant:
+        the null is the set-change rate measured at rho_train = 0 with the same
+        pipeline (no shortcut available). Run that null before the main grid.
+
+    Returns dict with set_change_rate, mean_prob_shift_l1, per-pair tensors
+    ("changed", "prob_shifts"), n_pairs, and the variant used.
+    """
+    score_fn = score_fn or APSScore(from_logits=True, randomized=True)
+    alpha_val = alpha if alpha is not None else getattr(calibrator, "default_alpha", 0.10)
+    if alpha_val in getattr(calibrator, "calibrated_alphas", {}):
+        threshold = calibrator.calibrated_alphas[alpha_val]
+    elif getattr(calibrator, "q_hat", None) is not None:
+        threshold = calibrator.q_hat
+    else:
+        raise RuntimeError("Calibrator has not been calibrated yet.")
+
+    device = next(cbm_model.parameters()).device
+    cbm_model.eval()
+    g = torch.Generator().manual_seed(seed)
+
+    changed_all, shift_all = [], []
+    with torch.no_grad():
+        for x, x_flip, c_true in pairs:
+            x, x_flip, c_true = x.to(device), x_flip.to(device), c_true.to(device)
+            B = x.shape[0]
+            if use_gt_concepts:
+                ones_mask = torch.ones_like(c_true, dtype=torch.bool)
+                logits, _ = cbm_model(x, intervened_concepts=c_true, intervention_mask=ones_mask)
+                logits_flip, _ = cbm_model(x_flip, intervened_concepts=c_true, intervention_mask=ones_mask)
+            else:
+                logits, _ = cbm_model(x)
+                logits_flip, _ = cbm_model(x_flip)
+
+            # Fixed u shared within each pair: both members use the same draw.
+            u = torch.rand(B, 1, generator=g).to(device)
+            both = torch.cat([logits, logits_flip], dim=0)
+            if isinstance(score_fn, APSScore):
+                scores = score_fn(both, None, uniforms=u.repeat(2, 1))
+            else:
+                scores = score_fn(both, None)
+            mask = scores <= threshold
+            changed = (mask[:B] != mask[B:]).any(dim=-1)
+
+            p = F.softmax(logits, dim=-1)
+            p_flip = F.softmax(logits_flip, dim=-1)
+            shift = (p - p_flip).abs().sum(dim=-1)
+
+            changed_all.append(changed.cpu())
+            shift_all.append(shift.cpu())
+
+    changed = torch.cat(changed_all)
+    shifts = torch.cat(shift_all)
+    return {
+        "set_change_rate": float(changed.float().mean().item()),
+        "mean_prob_shift_l1": float(shifts.mean().item()),
+        "n_pairs": int(len(changed)),
+        "changed": changed,
+        "prob_shifts": shifts,
+        "use_gt_concepts": use_gt_concepts,
     }
