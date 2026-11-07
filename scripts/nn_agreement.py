@@ -16,10 +16,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-import numpy as np
 import torch
 import torch.nn.functional as F
-from sklearn.neighbors import KNeighborsClassifier
 
 from ccm.data import get_shapes3d_loaders, get_cub_loaders
 from ccm.models import ConceptBottleneckModel
@@ -67,9 +65,10 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
         print(f"[*] Loading checkpoint: {ckpt_path}")
         state = load_checkpoint(ckpt_path, device=device)
         model.load_state_dict(state["model_state_dict"])
+        model_source = f"checkpoint:{ckpt_path}"
     else:
         print("[!] Checkpoint not found. Initializing and running quick feature extraction...")
-        # Train for 2 epochs for demonstration
+        # Train for 2 epochs for demonstration -- NOT a converged model.
         optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
         model.train()
         for _ in range(2):
@@ -80,6 +79,7 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
                 loss = F.cross_entropy(yl, y) + F.binary_cross_entropy_with_logits(cl, c.float())
                 loss.backward()
                 optimizer.step()
+        model_source = "quick-train-2-epochs"
 
     model.eval()
 
@@ -98,37 +98,29 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
     c_tensor = torch.cat(all_c, dim=0)
     y_tensor = torch.cat(all_y, dim=0)
 
-    # Compute NN leakage metrics
+    # Compute NN leakage metrics (stratified K-fold, fold-fitted scaling, signed gap,
+    # random-projection control -- see ccm.metrics.nn_leakage_score docstring)
     k = args.neighbors
-    metrics = nn_leakage_score(z_tensor, c_tensor, y_tensor, n_neighbors=k)
-
-    # Compute direct prediction agreement between kNN(z) and kNN(c)
-    z_np = z_tensor.numpy()
-    c_np = c_tensor.numpy()
-    y_np = y_tensor.numpy()
-
-    # Standardize
-    z_norm = (z_np - z_np.mean(axis=0)) / (z_np.std(axis=0) + 1e-6)
-    c_norm = (c_np - c_np.mean(axis=0)) / (c_np.std(axis=0) + 1e-6)
-
-    split = int(len(y_np) * 0.7)
-    knn_z = KNeighborsClassifier(n_neighbors=k).fit(z_norm[:split], y_np[:split])
-    knn_c = KNeighborsClassifier(n_neighbors=k).fit(c_norm[:split], y_np[:split])
-
-    preds_z = knn_z.predict(z_norm[split:])
-    preds_c = knn_c.predict(c_norm[split:])
-
-    nn_agreement_rate = float(np.mean(preds_z == preds_c))
-    metrics["nn_agreement_rate"] = nn_agreement_rate
+    metrics = nn_leakage_score(
+        z_tensor, c_tensor, y_tensor,
+        n_neighbors=k, n_splits=5, seed=cfg.get("seed", 42),
+    )
+    metrics["model_source"] = model_source
+    metrics["leakage_gap_ci_lo"] = metrics["leakage_gap_ci95"][0]
+    metrics["leakage_gap_ci_hi"] = metrics["leakage_gap_ci95"][1]
 
     print("\n" + "=" * 45)
     print("      NEAREST-NEIGHBOR LEAKAGE AUDIT")
     print("=" * 45)
     print(f"  k-NN Accuracy (Latent z)     : {metrics['nn_acc_latent']:.4f}")
     print(f"  k-NN Accuracy (Concepts c)   : {metrics['nn_acc_concept']:.4f}")
-    print(f"  Leakage Gap (z - c)          : {metrics['leakage_gap']:.4f}")
+    print(f"  Leakage Gap (z - c), SIGNED  : {metrics['leakage_gap']:+.4f}  "
+          f"(95% CI [{metrics['leakage_gap_ci_lo']:+.4f}, {metrics['leakage_gap_ci_hi']:+.4f}])")
+    print(f"  Control gap (z - proj(z))    : {metrics['control_gap']:+.4f}   [geometry null]")
+    print(f"  Excess gap vs control        : {metrics['excess_gap_vs_control']:+.4f}   [leakage evidence]")
     print(f"  Leakage Ratio (z / c)        : {metrics['leakage_ratio']:.4f}")
     print(f"  Agreement Rate [kNN(z)==kNN(c)]: {metrics['nn_agreement_rate']:.4f}")
+    print(f"  Model source                 : {model_source}")
     print("=" * 45 + "\n")
 
     # Vault Logging
@@ -137,28 +129,42 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
     vault_dir.mkdir(parents=True, exist_ok=True)
     report_note = vault_dir / "03 - Experiments" / f"NN_Agreement_Audit_{ds_name.title()}.md"
 
-    leakage_status = "🟢 Minimal Leakage" if metrics["leakage_gap"] < 0.05 else ("🟡 Moderate Leakage" if metrics["leakage_gap"] < 0.15 else "🔴 Severe Concept Leakage")
+    leakage_status = (
+        "🔴 Severe (beyond geometry null)" if metrics["excess_gap_vs_control"] > 0.15
+        else "🟡 Moderate (beyond geometry null)" if metrics["excess_gap_vs_control"] > 0.05
+        else "🟢 No evidence beyond geometry null"
+    )
+    quick_train_warn = (
+        "> [!FAILURE] INVALID for paper claims — model was quick-trained (2 epochs), not loaded from a checkpoint.\n"
+        if model_source == "quick-train-2-epochs" else ""
+    )
 
     md_lines = [
         "---",
         f"title: \"Nearest Neighbor Agreement Audit - {ds_name.upper()}\"",
         f"dataset: {ds_name}",
         "type: leakage-diagnostic",
+        f"model_source: {model_source}",
         "tags: [nn-agreement, concept-leakage, fidelity]",
         "---",
         f"# 🔍 Nearest-Neighbor Concept Leakage Diagnostic: {ds_name.upper()}",
-        f"> **Audited on:** `{len(y_np)}` samples | **Neighborhood Size:** `k={k}` | **Assessment:** {leakage_status}\n",
+        quick_train_warn,
+        f"> **Audited on:** `{len(y_tensor)}` samples | **Neighborhood Size:** `k={k}` | "
+        f"**Model source:** `{model_source}` | **Assessment:** {leakage_status}\n",
         "## 1. Leakage & Agreement Scorecard",
-        "| Metric | Observed Value | Theoretical Ideal | Status |",
+        "| Metric | Observed Value | Reference | Status |",
         "| :--- | :--- | :--- | :--- |",
-        f"| **k-NN Accuracy (Latent $z$)** | `{metrics['nn_acc_latent']:.4f}` | Equal to $c$ | Latent Fidelity |",
-        f"| **k-NN Accuracy (Concepts $c$)** | `{metrics['nn_acc_concept']:.4f}` | High | Bottleneck Sufficiency |",
-        f"| **Leakage Gap ($z - c$)** | `{metrics['leakage_gap']:+.4f}` | `0.0000` | {leakage_status} |",
-        f"| **Leakage Ratio ($z / c$)** | `{metrics['leakage_ratio']:.4f}` | `1.0000` | Multiplicative Bias |",
+        f"| **k-NN Accuracy (Latent $z$)** | `{metrics['nn_acc_latent']:.4f}` | — | Latent Fidelity |",
+        f"| **k-NN Accuracy (Concepts $c$)** | `{metrics['nn_acc_concept']:.4f}` | — | Bottleneck Sufficiency |",
+        f"| **Leakage Gap ($z - c$), signed** | `{metrics['leakage_gap']:+.4f}` | vs control, not 0 | {leakage_status} |",
+        f"| **Gap 95% CI (folds)** | `[{metrics['leakage_gap_ci_lo']:+.4f}, {metrics['leakage_gap_ci_hi']:+.4f}]` | contains 0? | Estimation noise |",
+        f"| **Control gap ($z$ vs random proj of $z$)** | `{metrics['control_gap']:+.4f}` | geometry null | Null band |",
+        f"| **Excess gap vs control** | `{metrics['excess_gap_vs_control']:+.4f}` | `0.0000` | Leakage evidence |",
         f"| **Latent vs Concept Agreement** | `{metrics['nn_agreement_rate']*100:.2f}%` | `100.0%` | Decision Consistency |",
         "\n## 2. Interpretation & Conformal Implications",
-        "- **Information Bottleneck Integrity**: When the leakage gap is low, downstream conformal sets calibrated on concepts accurately reflect true prediction uncertainty without unmodeled latent side-channels.",
-        "- **Intervention Reliability**: High NN agreement guarantees that intervening on human concepts will produce predictable, faithful shifts in model behavior rather than being overridden by leaked latent variables.",
+        "- **Signed gap**: negative values mean the concept bottleneck is MORE predictive than the latent (e.g., denoising); v1 clipped these to 0 and misreported them as \"no leakage\".",
+        "- **Geometry null**: judge the gap against the random-projection control (same information as $z$, $c$'s dimensionality), never against 0 — a raw gap conflates leakage with distance-geometry artifacts.",
+        "- **Intervention Reliability**: high NN agreement suggests intervening on human concepts produces predictable shifts, provided the excess gap is near the null.",
         "\n## 🔗 Related Notes",
         "- [[00 - Dashboards/Audit Dashboard|Audit Dashboard]]",
         "- [[01 - Literature & Theory/Concept Bottleneck Models|CBM Theory]]",
@@ -168,14 +174,17 @@ def run_nn_agreement(config_path: str, args: argparse.Namespace):
     with open(report_note, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines))
 
-    # Log to logger
+    # Log to logger (drop the CI list; flat lo/hi keys keep the frontmatter scalar)
+    log_metrics = {k: v for k, v in metrics.items() if k != "leakage_gap_ci95"}
     logger = VaultLogger(vault_path=vault_dir)
     logger.log_run(
         experiment_type="nn-audit",
         run_name=f"nn_agreement_{ds_name}",
         config=cfg,
-        metrics=metrics,
-        notes=f"k-NN leakage audit evaluated with k={k}. Leakage gap: {metrics['leakage_gap']:.4f}.",
+        metrics=log_metrics,
+        notes=(f"k-NN leakage audit, k={k}, stratified 5-fold, model_source={model_source}. "
+               f"Signed gap {metrics['leakage_gap']:+.4f}, excess vs control "
+               f"{metrics['excess_gap_vs_control']:+.4f}."),
     )
 
     print(f"[*] NN Agreement audit logged to Obsidian Vault at: {report_note}")

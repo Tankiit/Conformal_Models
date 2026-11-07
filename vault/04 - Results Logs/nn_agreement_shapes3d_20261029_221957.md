@@ -13,6 +13,14 @@ nn_agreement_rate: 1.0
 
 # Run Report: nn_agreement_shapes3d
 
+> [!NOTE] Saturated / sign-clip caveat (tagged 2026-11-07)
+> Shapes3D accuracy is at ceiling here (label = one declared concept column), so the
+> gap is uninformative; and this log predates the signed-gap fix — a clipped `0.0`
+> gap may hide a negative (concepts-more-predictive) value. See
+> [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]] §1 and the
+> Shapes3D generator spec under `03 - Experiments`.
+
+
 > **Execution Date:** `2026-10-29 22:19:57` | **Type:** `nn-audit`
 
 ## 📊 Key Evaluation Metrics

@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
+from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 
 from ccm.sets import PredictionSet, ConceptPredictionSet
@@ -132,42 +133,78 @@ def nn_leakage_score(
     concepts: torch.Tensor,
     targets: torch.Tensor,
     n_neighbors: int = 5,
-) -> Dict[str, float]:
+    n_splits: int = 5,
+    seed: int = 0,
+    n_control_projections: int = 1,
+) -> Dict[str, Any]:
     """
-    Nearest-Neighbor Concept Leakage Diagnostic.
-    Compares label predictability from intermediate representations z vs concepts c:
-    If z achieves substantially higher NN-accuracy than c, the representation leaks
-    information about the task label that is not captured by the concept bottleneck.
+    Nearest-Neighbor Concept Leakage Diagnostic (v2; fixes the 2026-11-07 review).
+
+    Compares label predictability from latent representations z vs concepts c.
+    The gap is SIGNED: positive = z predicts y better than c (leakage direction),
+    negative = the bottleneck is more predictive than the latent (v1 clipped this
+    to 0, reporting "no leakage" when the concepts outperformed the latent).
+
+    The gap is NOT judged against 0: z and c live in different dimensions and
+    scales, so part of any gap is distance-geometry artifact. The control projects
+    z randomly to dim(c) -- identical information content, c's dimensionality --
+    giving a null gap attributable to geometry alone. Leakage evidence is
+    excess_gap_vs_control = gap - control_gap, judged against the fold CI.
+
+    Protocol fixes over v1:
+      - stratified K-fold (class-balanced, shuffled) instead of an index-order
+        70/30 split, which on class-sorted data tests kNN on unseen classes;
+      - standardization fitted on the train fold only (v1 fitted on all rows,
+        a mild transductive leak).
     """
     z_np = representations.detach().cpu().numpy()
     c_np = concepts.detach().cpu().numpy()
     y_np = targets.detach().cpu().numpy()
 
-    # Normalize features
-    z_norm = (z_np - z_np.mean(axis=0)) / (z_np.std(axis=0) + 1e-6)
-    c_norm = (c_np - c_np.mean(axis=0)) / (c_np.std(axis=0) + 1e-6)
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
+    rng = np.random.RandomState(seed)
+    d_z, d_c = z_np.shape[1], c_np.shape[1]
+    projections = [rng.randn(d_z, d_c) / np.sqrt(d_c) for _ in range(max(0, n_control_projections))]
 
-    # Train k-NN on 70% split, test on 30%
-    n_samples = len(y_np)
-    split_idx = int(n_samples * 0.7)
-    
-    knn_z = KNeighborsClassifier(n_neighbors=n_neighbors)
-    knn_c = KNeighborsClassifier(n_neighbors=n_neighbors)
+    accs_z, accs_c, agree = [], [], []
+    ctrl_gaps = []  # per (fold, projection): acc_z_fold - acc_ctrl, the geometry null
+    for train_idx, test_idx in skf.split(z_np, y_np):
+        # Standardization fitted on the train fold only.
+        z_mu, z_sd = z_np[train_idx].mean(axis=0), z_np[train_idx].std(axis=0) + 1e-6
+        c_mu, c_sd = c_np[train_idx].mean(axis=0), c_np[train_idx].std(axis=0) + 1e-6
+        z_tr, z_te = (z_np[train_idx] - z_mu) / z_sd, (z_np[test_idx] - z_mu) / z_sd
+        c_tr, c_te = (c_np[train_idx] - c_mu) / c_sd, (c_np[test_idx] - c_mu) / c_sd
+        y_tr, y_te = y_np[train_idx], y_np[test_idx]
 
-    knn_z.fit(z_norm[:split_idx], y_np[:split_idx])
-    knn_c.fit(c_norm[:split_idx], y_np[:split_idx])
+        preds_z = KNeighborsClassifier(n_neighbors=n_neighbors).fit(z_tr, y_tr).predict(z_te)
+        preds_c = KNeighborsClassifier(n_neighbors=n_neighbors).fit(c_tr, y_tr).predict(c_te)
+        acc_z_f = float((preds_z == y_te).mean())
+        accs_z.append(acc_z_f)
+        accs_c.append(float((preds_c == y_te).mean()))
+        agree.append(float((preds_z == preds_c).mean()))
+        for proj in projections:
+            acc_p = float(KNeighborsClassifier(n_neighbors=n_neighbors)
+                          .fit(z_tr @ proj, y_tr)
+                          .score(z_te @ proj, y_te))
+            ctrl_gaps.append(acc_z_f - acc_p)
 
-    acc_z = float(knn_z.score(z_norm[split_idx:], y_np[split_idx:]))
-    acc_c = float(knn_c.score(c_norm[split_idx:], y_np[split_idx:]))
-
-    leakage_gap = max(0.0, acc_z - acc_c)
-    leakage_ratio = acc_z / (acc_c + 1e-6)
+    accs_z_arr, accs_c_arr = np.asarray(accs_z), np.asarray(accs_c)
+    gaps = accs_z_arr - accs_c_arr
+    gap_mean = float(gaps.mean())
+    gap_sd = float(gaps.std(ddof=1)) if n_splits > 1 else 0.0
+    ci_half = 1.96 * gap_sd / np.sqrt(n_splits)
+    control_gap = float(np.mean(ctrl_gaps)) if ctrl_gaps else float("nan")
 
     return {
-        "nn_acc_latent": acc_z,
-        "nn_acc_concept": acc_c,
-        "leakage_gap": leakage_gap,
-        "leakage_ratio": leakage_ratio,
+        "nn_acc_latent": float(accs_z_arr.mean()),
+        "nn_acc_concept": float(accs_c_arr.mean()),
+        "leakage_gap": gap_mean,  # SIGNED: negative = concepts beat latent
+        "leakage_gap_sd": gap_sd,
+        "leakage_gap_ci95": [gap_mean - ci_half, gap_mean + ci_half],
+        "leakage_ratio": float(accs_z_arr.mean() / (accs_c_arr.mean() + 1e-6)),
+        "nn_agreement_rate": float(np.mean(agree)),
+        "control_gap": control_gap,
+        "excess_gap_vs_control": gap_mean - control_gap,
     }
 
 

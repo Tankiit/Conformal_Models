@@ -177,9 +177,15 @@ def run_pilot(config_path: str, args: argparse.Namespace):
         md_lines.append(f"| **{name}** | `{s_base:.2f}` | `{s_final:.2f}` | `-{reduc:.1f}%` | `{cov_final:.1f}%` |")
 
     md_lines.extend([
-        "\n## 3. Analysis & Insights",
-        "- **Greedy Conformal Policy**: Delivers substantial efficiency gains by selecting concepts that directly collapse downstream prediction ambiguity.",
-        "- **Set Size Compression**: As accurate concepts are provided by experts, conformal set sizes compress towards singletons while strictly preserving the 90% coverage guarantee.",
+        "\n## 3. Run Provenance",
+        f"- Model: **trained from scratch, {epochs} epochs** on {ds_name} "
+        f"(backbone `{cfg.get('model', {}).get('backbone_type', '?')}`, "
+        f"image size {cfg.get('data', {}).get('image_size', '?')}px, "
+        f"{cfg.get('data', {}).get('num_samples', '?')} samples).",
+        "- Interpret every number relative to that training budget: a from-scratch "
+        "conv backbone with few epochs is **not** comparable to the frozen-DINOv2 "
+        "pipeline in [[04 - Results Logs/cub_gate_20261106|cub_gate]] (linear-probe "
+        "reference 0.877). Base accuracy far below that reference invalidates the run.",
         "\n## 🔗 Related Notes",
         "- [[00 - Dashboards/Experiment Tracker|Experiment Tracker]]",
         "- [[02 - Architecture & System/Intervention Policies|Intervention Policies]]",
@@ -196,13 +202,16 @@ def run_pilot(config_path: str, args: argparse.Namespace):
         run_name=f"cvpr_pilot_{ds_name}",
         config=cfg,
         metrics={
+            "model_source": f"trained-from-scratch-{epochs}epochs",
+            "epochs": epochs,
             "intervention_auc": policy_results["Greedy Conformal"]["auc_accuracy"],
             "base_acc": policy_results["Greedy Conformal"]["accuracies"][0],
             "final_acc": policy_results["Greedy Conformal"]["accuracies"][-1],
             "base_set_size": policy_results["Greedy Conformal"]["avg_set_sizes"][0],
             "final_set_size": policy_results["Greedy Conformal"]["avg_set_sizes"][-1],
         },
-        notes="Evaluated multi-policy budgeted concept interventions with RAPS calibration.",
+        notes=(f"From-scratch pilot ({epochs} epochs), NOT a converged model; "
+               "compare base_acc to the 0.877 linear-probe reference before citing."),
     )
 
     print(f"\n[*] CVPR Pilot note created at: {benchmarks_note}")

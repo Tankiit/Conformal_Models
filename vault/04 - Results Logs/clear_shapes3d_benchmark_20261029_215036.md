@@ -3,7 +3,7 @@ title: "clear_shapes3d_benchmark"
 experiment_type: shapes3d
 date: 2026-10-29 21:50:36
 tags: [conformal-cbm, experiment, shapes3d]
-status: completed
+status: superseded
 test_task_acc: 0.29499998688697815
 test_concept_acc: 0.79708331823349
 marginal_coverage: 0.9399999976158142
@@ -15,6 +15,12 @@ q_hat: 0.9272823333740234
 ---
 
 # Run Report: clear_shapes3d_benchmark
+
+> [!WARNING] Synthetic pilot — superseded (tagged 2026-11-07)
+> Small procedural-generator run, not the real 3D Shapes data; superseded by
+> [[04 - Results Logs/clear_shapes3d_full_20261029_225538|clear_shapes3d_full]]
+> (and by the saturation verdict in [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]]).
+
 
 > **Execution Date:** `2026-10-29 21:50:36` | **Type:** `shapes3d`
 
