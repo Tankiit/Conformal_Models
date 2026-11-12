@@ -10,6 +10,8 @@ date: 2026-11-06
 >
 > **🔁 Update (same day):** a local full replication now exists — [[04 - Results Logs/cub_gate_20261106|CUB Gate Run]] (DINOv2 features re-extracted on this machine; probe 0.894, CBM-312 0.872; check 1 resolved: **the 95.2% was the empty-set fill, not shift**; step-2 gate fails — induced baseline dominates). Where this snapshot and the Gate Run disagree, the Gate Run's protocol (no-fill, same-pool) is the one to use.
 
+> **🔁 Update (2026-11-11): §1 below is superseded for the CLeaR arm.** The paired-nuisance design now runs on the **REAL official 3dshapes images** (D1/D2/D5 settled; [[03 - Experiments/Shapes3D Paired-Nuisance Generator Spec|spec]]). First real grid, [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261111_094725|run log]]: the ρ=0 CBM is **de-saturated** (acc 0.834, set size 1.36 — inside the 70–90% target, non-trivial sets), Test-2 set-change 0.952/0.928/0.915 (cbm/residual/blackbox) vs ρ=0 nulls 0.056/0.006/0.002, Test-1 attribution textbook, sanity (x,x) null exactly 0. **Shapes3D can now test the CLeaR paper.** The old "everything at ceiling" verdict applied to the legacy shape-only protocol, which is retired.
+
 ---
 
 ## 1. Shapes3D (all 480k images) — 🔴 SATURATED

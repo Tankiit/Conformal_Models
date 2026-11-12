@@ -22,9 +22,9 @@ CUB class-denoised attribute labels are constant per class, so **"all concepts r
 
 Raw per-image vs class-denoised labels agree on only **91.9%** of entries. Any table mixing label sources is comparing incomparable quantities. **Action:** annotate every coverage figure with its label source; never mix within a comparison.
 
-## 4. Shapes3D concept coverage used 0.5-thresholded concepts
+## 4. Shapes3D concept coverage used 0.5-thresholded concepts — ✅ CLOSED by design change (2026-11-11)
 
-The 52.6% joint figure was computed for concepts **thresholded at 0.5**, not for categorical factor values. It is not the joint coverage of the categorical concept claim the CLeaR paper wants to make. **Action:** recompute under the categorical scheme once D1 (nuisance factor + $Y = f(C)$ rule) is decided.
+The 52.6% joint figure was computed for concepts **thresholded at 0.5**, not for categorical factor values. **D1 is now settled** and the paired CLeaR test is **label-set based** — it never computes joint concept coverage, so the 52.6% figure stays retired with the legacy protocol (see [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261111_094725|the real-data run]]). Reopens only if a concept-coverage claim returns to the paper.
 
 ---
 

@@ -12,6 +12,10 @@ This dashboard tracks all training and evaluation runs for Conformal Concept Mod
 | Date | Run / Note Link | Dataset | Task Acc | Concept Acc | Conformal Cov | Avg Set Size |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 <!-- RUNS_TABLE_BODY -->
+| 2026-11-11 | [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261111_094725|CLeaR Paired Pilot clear_paired_shapes3d_real]] | `clear-paired-pilot` | - | - | - | - |
+
+| 2026-11-11 | [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_20261111_092746|CLeaR Paired Pilot clear_paired_shapes3d]] | `clear-paired-pilot` | - | - | - | - |
+
 | 2026-11-06 | [[04 - Results Logs/cub_gate_20261106|cub_gate (check1 + step2)]] | `cub-gate` | 0.872 | 0.952 | 0.901 | 2.63 |
 | 2026-10-29 | [[04 - Results Logs/cvpr_pilot_cub_20261029_230033|cvpr_pilot_cub]] | `cvpr-pilot` | - | - | - | - |
 

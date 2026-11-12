@@ -9,15 +9,15 @@ date: 2026-10-29
 > **Welcome to the Conformal Concept Models (CCM) Research Hub.**
 > This vault tracks theoretical foundations, architecture designs, benchmark scorecards, and live automated run logs for distribution-free conformal prediction on Concept Bottleneck Models (CBMs).
 
-## 📌 Program Status & Deadlines (updated 2026-11-06)
+## 📌 Program Status & Deadlines (updated 2026-11-11)
 
 | Deadline | Date |
 | :--- | :--- |
-| 🔒 **CVPR 2027 paper registration** | **10 Nov 2026** (fixed point) |
+| 🔒 **CVPR 2027 paper registration** | 10 Nov 2026 — **passed; status not recorded, confirm** |
 | **CVPR 2027 full paper submission** | 16 Nov 2026 (AoE) |
-| ❓ **CLeaR deadline** | not yet checked |
+| 🔴 **CLeaR 2027 submission** | **16 Nov 2026, 11:59 pm AoE** (verified 2026-11-11 — no extension) |
 
-The program is now a **two-paper split** (CLeaR: leakage; CVPR: joint concept uncertainty). Current state of play: [[06 - Papers & Planning/Roadmap and Gates|Roadmap and Gates]] → [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]] → [[06 - Papers & Planning/Open Checks|Open Checks]] → [[06 - Papers & Planning/Open Decisions|Open Decisions]].
+The program is now a **two-paper split** (CLeaR: leakage; CVPR: joint concept uncertainty). **State of play (2026-11-11):** D1/D2/D5 settled and the CLeaR paired-nuisance experiment now runs on the **real official 3dshapes images** — first grid executed (see [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261111_094725|the real-data run]]); step-3 gate still open (next: ρ=0.5 dose-response). Stories: [[06 - Papers & Planning/Story - CLeaR Leakage Paper|CLeaR]] · [[06 - Papers & Planning/Story - CVPR Collapse Paper|CVPR]]. Planning: [[06 - Papers & Planning/Roadmap and Gates|Roadmap and Gates]] → [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]] → [[06 - Papers & Planning/Open Checks|Open Checks]] → [[06 - Papers & Planning/Open Decisions|Open Decisions]].
 
 ---
 
@@ -53,6 +53,9 @@ The program is now a **two-paper split** (CLeaR: leakage; CVPR: joint concept un
 ```bash
 # Activate conda environment
 conda activate torch-multimodal
+
+# 0. Run the CLeaR paired-nuisance grid on REAL 3dshapes images
+python scripts/clear_paired.py --config configs/clear_paired_shapes3d_real.yaml
 
 # 1. Train CBM on Shapes3D and calibrate conformal sets
 python scripts/clear_train.py --config configs/clear_shapes3d.yaml

@@ -1,0 +1,50 @@
+# CLeaR paired-nuisance grid on the REAL official DeepMind 3dshapes images
+# (user direction 2026-11-11: main tables on real data; procedural = fixture).
+# Data: /Users/tanmoy/research/data/3dshapes.h5 (480k grid; gzip HDF5).
+# Pool per (class, palette) at floor_level=0, u_levels=(1,8), buckets=2 is 600,
+# so num_samples=4800 (=600/class) never triggers the class cap at rho=1.
+experiment_name: "clear_paired_shapes3d_real"
+seed: 42
+
+data:
+  source: "real"
+  h5_file: "/Users/tanmoy/research/data/3dshapes.h5"
+  num_samples: 4800
+  rho: 0.0            # per-cell value; the script sets it from grid.rhos
+  floor_level: 0
+  u_levels: [1, 8]
+  label_rule: "composite"
+  scale_buckets: 2
+
+model:
+  backbone_type: "conv"
+  latent_dim: 128
+  residual_dim: 16
+
+grid:
+  rhos: [0.0, 1.0]        # D2: rho=0 FIRST (Test-2 null), then the shortcut regime
+  models: ["cbm", "residual", "blackbox"]
+
+training:
+  epochs: 8
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  concept_loss_weight: 1.0
+  task_loss_weight: 1.0
+  device: null  # Auto-detects mps/cuda/cpu
+
+conformal:
+  score_type: "aps"
+  alpha: 0.10
+  fill_empty: false  # D3: no-fill reporting
+
+nn_audit:
+  n_neighbors: 5
+  n_splits: 5
+  n_null_draws: 8
+  n_control_projections: 5
+
+logging:
+  vault_path: "vault"
+  log_to_vault: true

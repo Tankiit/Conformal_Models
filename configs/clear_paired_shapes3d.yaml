@@ -1,0 +1,49 @@
+# CLeaR paired-nuisance pilot: Shapes3D U-flip leakage grid (vault spec settled 2026-11-11)
+experiment_name: "clear_paired_shapes3d_pilot"
+seed: 42
+
+data:
+  dataset: "shapes3d_paired"
+  num_samples: 6000
+  image_size: 32
+  u_source: "wall_hue"
+  rho: 0.0            # per-cell value; the script sets it from grid.rhos
+  label_rule: "composite"
+  scale_buckets: 2    # pilot knob: tune toward 70-90% operating accuracy
+  wall_palettes: [0.25, 0.75]
+  floor_hue: 0.5
+  noise_std: 0.02
+  render_orientation: false
+
+model:
+  backbone_type: "conv"
+  latent_dim: 128
+  residual_dim: 16
+
+grid:
+  rhos: [0.0, 1.0]        # D2: rho=0 FIRST (Test-2 null), then the shortcut regime
+  models: ["cbm", "residual", "blackbox"]
+
+training:
+  epochs: 8
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  concept_loss_weight: 1.0
+  task_loss_weight: 1.0
+  device: null  # Auto-detects mps/cuda/cpu
+
+conformal:
+  score_type: "aps"
+  alpha: 0.10
+  fill_empty: false  # D3: no-fill reporting
+
+nn_audit:
+  n_neighbors: 5
+  n_splits: 5
+  n_null_draws: 8
+  n_control_projections: 5
+
+logging:
+  vault_path: "vault"
+  log_to_vault: true
