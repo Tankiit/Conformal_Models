@@ -197,6 +197,8 @@ class RealShapes3DPairedDataset(Dataset):
         uniq_scenes, scene_inv = np.unique(sel_combo, axis=0, return_inverse=True)
         self.scene_ids = torch.from_numpy(scene_inv.astype(np.int64))
         self.n_scenes = len(uniq_scenes)
+        self.scene_combos = torch.from_numpy(uniq_scenes.astype(np.int64))
+        self._levels = dict(n_levels=n_levels, n_scale=n_scale_lvls)
 
         # Labels recomputed from the sampled combos: identical rule to the
         # pool construction, no index bookkeeping to get wrong.
@@ -212,6 +214,7 @@ class RealShapes3DPairedDataset(Dataset):
         img_of = {}
         for h5_idx, combo, u in zip(cand, combos, u_of_cand):
             img_of[(tuple(combo), int(u))] = int(h5_idx)
+        self._img_of = img_of  # (combo tuple, u) -> row index, for render()
         sel_h5 = np.array(
             [img_of[(tuple(c), int(uu))] for c, uu in zip(sel_combo, sel_u)], dtype=np.int64
         )
@@ -261,6 +264,54 @@ class RealShapes3DPairedDataset(Dataset):
     def flip(self, idx: int) -> torch.Tensor:
         """Real partner image: identical declared C, opposite wall palette."""
         return self._image(self._partner_local[idx])
+
+    # ---------------------------------------------- four-image test hooks
+    # The 2x2 evaluation (wall A/B x size bucket boundary) needs ARBITRARY grid
+    # renders (e.g. the size-partner scene's walls), not just sampled items.
+    _render_src = None  # lazily opened h5py file / npz handle
+
+    def render(self, combo, u: int) -> torch.Tensor:
+        """Image of ANY grid scene (obj, scale, shape, orient) at wall u
+        (0/1 -> u_levels[0]/u_levels[1]), this floor. (3, H, W) float in [0,1]."""
+        combo = tuple(int(v) for v in combo)
+        key = (combo, int(u))
+        if key in self._img_of:
+            row = self._img_of[key]
+        else:  # combo outside the sampled candidates only if floor differs; guard
+            raise KeyError(f"combo {combo} not in the candidate grid at this floor")
+        if self._render_src is None:
+            self._render_src = self._load_labels(self.data_file)[0]
+        src = self._render_src
+        idx = sorted([row])
+        img = src["images"][idx][0]  # (H, W, 3) uint8
+        import torch as _t
+
+        return _t.from_numpy(np.ascontiguousarray(img.transpose(2, 0, 1))).float() / 255.0
+
+    def concept_vector(self, combo) -> torch.Tensor:
+        """Normalized declared-concept vector of a scene combo (same scaling as
+        dataset.concepts): obj, scale, shape, orientation as level fractions."""
+        n_levels = self._levels["n_levels"]
+        n_scale = self._levels["n_scale"]
+        combo = [int(v) for v in combo]
+        return torch.tensor(
+            [
+                combo[0] / max(n_levels[2] - 1, 1),
+                combo[1] / max(n_scale - 1, 1),
+                combo[2] / 3.0,
+                combo[3] / max(n_levels[5] - 1, 1),
+            ],
+            dtype=torch.float32,
+        )
+
+    def scale_partner_level(self, scale_level: int) -> int:
+        """The boundary-ADJACENT scale level in the other bucket (buckets=2):
+        the minimal semantic change that crosses the label boundary."""
+        if self.scale_buckets != 2:
+            raise ValueError("scale_partner_level implements scale_buckets == 2 only")
+        n_scale = self._levels["n_scale"]
+        half = n_scale // 2
+        return half - 1 if scale_level >= half else half
 
 
 def num_split(total: int, parts: int, i: int) -> int:
