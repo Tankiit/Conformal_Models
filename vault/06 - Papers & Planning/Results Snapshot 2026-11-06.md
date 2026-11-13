@@ -6,6 +6,9 @@ date: 2026-11-06
 
 # 📸 Results Snapshot — 2026-11-06
 
+> [!NOTE] Superseded 2026-11-13
+> Canonical numbers now live in [[06 - Papers & Planning/Results Snapshot 2026-11-13|Results Snapshot 2026-11-13]]. This snapshot remains the source of record for the **CUB gate-run numbers** (unchanged since); its Shapes3D section predates the paired-nuisance redesign and the 2026-11-07 code-review fixes.
+
 > **Provenance:** all numbers below come from runs in this codebase (`scripts/`) and were **not re-run** for the 2026-11-06 planning pass. Raw per-run logs: [[04 - Results Logs/README|Results Logs]]. Older rows in the [[00 - Dashboards/Experiment Tracker|Experiment Tracker]] are earlier pilot/synthetic runs and are **superseded** by this snapshot for planning purposes.
 >
 > **🔁 Update (same day):** a local full replication now exists — [[04 - Results Logs/cub_gate_20261106|CUB Gate Run]] (DINOv2 features re-extracted on this machine; probe 0.894, CBM-312 0.872; check 1 resolved: **the 95.2% was the empty-set fill, not shift**; step-2 gate fails — induced baseline dominates). Where this snapshot and the Gate Run disagree, the Gate Run's protocol (no-fill, same-pool) is the one to use.

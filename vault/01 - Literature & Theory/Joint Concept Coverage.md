@@ -58,5 +58,5 @@ Any scheme that both *defines* neighborhoods and *calibrates* on the same data d
 - [[01 - Literature & Theory/Label-Set Guarantee - Scope and Limits|Label-Set Guarantee: Scope and Limits]]
 - [[02 - Architecture & System/Nonconformity Scores|Nonconformity Scores]] — the score functions behind each baseline
 - [[06 - Papers & Planning/Paper Split - CLeaR vs CVPR|Paper Split]] — this is the CVPR paper's question
-- [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]] — current joint-coverage numbers on CUB
+- [[06 - Papers & Planning/Results Snapshot 2026-11-13|Results Snapshot 2026-11-13]] — current joint-coverage numbers on CUB
 - [[06 - Papers & Planning/Open Decisions|Open Decisions]] — D4 (claim form)

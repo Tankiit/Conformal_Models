@@ -17,7 +17,7 @@ date: 2026-10-29
 | **CVPR 2027 full paper submission** | 16 Nov 2026 (AoE) |
 | 🔴 **CLeaR 2027 submission** | **16 Nov 2026, 11:59 pm AoE** (verified 2026-11-11 — no extension) |
 
-The program is now a **two-paper split** (CLeaR: leakage; CVPR: joint concept uncertainty). **State of play (2026-11-11):** D1/D2/D5 settled and the CLeaR paired-nuisance experiment now runs on the **real official 3dshapes images** — first grid executed (see [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261111_094725|the real-data run]]); step-3 gate still open (next: ρ=0.5 dose-response). Stories: [[06 - Papers & Planning/Story - CLeaR Leakage Paper|CLeaR]] · [[06 - Papers & Planning/Story - CVPR Collapse Paper|CVPR]]. Planning: [[06 - Papers & Planning/Roadmap and Gates|Roadmap and Gates]] → [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]] → [[06 - Papers & Planning/Open Checks|Open Checks]] → [[06 - Papers & Planning/Open Decisions|Open Decisions]].
+The program is now a **two-paper split** (CLeaR: leakage; CVPR: joint concept uncertainty). **State of play (2026-11-13 — both deadlines 3 days out):** D1–D5 all settled (D4 closed via the CVPR story); the CLeaR paired-nuisance grid ran on the **real official 3dshapes images** — machinery validated (sanity null exactly 0, Test-1 attribution textbook, ρ=0 CBM de-saturated at 0.834 acc), **step-3 gate still open** (next: ρ=0.5 dose-response); CVPR arm reframed as the collapse finding. Canonical numbers: [[06 - Papers & Planning/Results Snapshot 2026-11-13|Results Snapshot 2026-11-13]]. Stories: [[06 - Papers & Planning/Story - CLeaR Leakage Paper|CLeaR]] · [[06 - Papers & Planning/Story - CVPR Collapse Paper|CVPR]]. Planning: [[06 - Papers & Planning/Roadmap and Gates|Roadmap and Gates]] → [[06 - Papers & Planning/Results Snapshot 2026-11-13|Results Snapshot]] → [[06 - Papers & Planning/Open Checks|Open Checks]] → [[06 - Papers & Planning/Open Decisions|Open Decisions]].
 
 ---
 
@@ -31,7 +31,7 @@ The program is now a **two-paper split** (CLeaR: leakage; CVPR: joint concept un
 | **03 - Experiments** | Benchmark definitions for Shapes3D, CUB-200-2011, and Leakage audits | [[03 - Experiments/Shapes3D Benchmarks\|Shapes3D Benchmark]]<br>[[03 - Experiments/CUB-200-2011 Benchmarks\|CUB Benchmark]] |
 | **04 - Results Logs** | Live automated notes created per script execution | See latest run reports in `04 - Results Logs/` |
 | **05 - Templates** | Reusable templates for logging runs and audits | [[05 - Templates/New Experiment Run\|New Run Template]] |
-| **06 - Papers & Planning** | Two-paper program: paper split, results snapshots, open checks/decisions, roadmap & gates | [[06 - Papers & Planning/Paper Split - CLeaR vs CVPR\|Paper Split: CLeaR vs CVPR]]<br>[[06 - Papers & Planning/Results Snapshot 2026-11-06\|Results Snapshot]]<br>[[06 - Papers & Planning/Roadmap and Gates\|Roadmap & Gates]] |
+| **06 - Papers & Planning** | Two-paper program: paper split, results snapshots, open checks/decisions, roadmap & gates | [[06 - Papers & Planning/Paper Split - CLeaR vs CVPR\|Paper Split: CLeaR vs CVPR]]<br>[[06 - Papers & Planning/Results Snapshot 2026-11-13\|Results Snapshot]]<br>[[06 - Papers & Planning/Roadmap and Gates\|Roadmap & Gates]] |
 
 ---
 

@@ -50,6 +50,6 @@ Per [[06 - Papers & Planning/Roadmap and Gates|Roadmap and Gates]]: **register t
 
 ## 🔗 Related Notes
 - [[06 - Papers & Planning/Story - CLeaR Leakage Paper|Story: CLeaR Leakage Paper]] · [[06 - Papers & Planning/Story - CVPR Collapse Paper|Story: CVPR Collapse Paper]]
-- [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]]
+- [[06 - Papers & Planning/Results Snapshot 2026-11-13|Results Snapshot (canonical)]]
 - [[06 - Papers & Planning/Open Decisions|Open Decisions]]
 - [[06 - Papers & Planning/Roadmap and Gates|Roadmap and Gates]]

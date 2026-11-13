@@ -29,6 +29,6 @@ The 52.6% joint figure was computed for concepts **thresholded at 0.5**, not for
 ---
 
 ## 🔗 Related Notes
-- [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]] — the numbers these checks refer to
+- [[06 - Papers & Planning/Results Snapshot 2026-11-13|Results Snapshot (canonical)]] — the numbers these checks refer to
 - [[06 - Papers & Planning/Open Decisions|Open Decisions]] — design choices, not checks
 - [[06 - Papers & Planning/Roadmap and Gates|Roadmap and Gates]]

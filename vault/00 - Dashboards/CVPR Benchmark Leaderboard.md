@@ -6,7 +6,7 @@ tags: [cvpr, benchmark, leaderboard, interventions]
 # 🏆 CVPR Pilot: Concept Intervention Policy Leaderboard
 
 > [!WARNING] Placeholder — not run-derived (flagged 2026-11-07)
-> The numbers below were **not produced by any run in this repo**; they predate the pilot logs and do not match them (the actual `cvpr_pilot_cub` runs of 2026-10-29 report e.g. `intervention_auc` 0.39 and final set size 73). Treat this page as a *policy taxonomy mock-up only*. Any CVPR-facing number must come from [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot 2026-11-06]] or a logged run in [[04 - Results Logs/README|Results Logs]]. The "Key Research Observations" below are likewise unverified claims and must not be cited.
+> The numbers below were **not produced by any run in this repo**; they predate the pilot logs and do not match them (the actual `cvpr_pilot_cub` runs of 2026-10-29 report e.g. `intervention_auc` 0.39 and final set size 73). Treat this page as a *policy taxonomy mock-up only*. Any CVPR-facing number must come from [[06 - Papers & Planning/Results Snapshot 2026-11-13|Results Snapshot 2026-11-13]] or a logged run in [[04 - Results Logs/README|Results Logs]]. The "Key Research Observations" below are likewise unverified claims and must not be cited.
 
 Comparative evaluation of budgeted test-time concept interventions on fine-grained attribute classification (CUB-200-2011).
 

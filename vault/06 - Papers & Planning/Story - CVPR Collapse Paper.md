@@ -95,6 +95,6 @@ shrinks sets 2.57 → 1.81.
   available deadline (CLeaR?). Confirm and record.
 
 ## 🔗 Related Notes
-- [[04 - Results Logs/cub_gate_20261106|CUB Gate Run]] · [[06 - Papers & Planning/Results Snapshot 2026-11-06|Results Snapshot]]
+- [[04 - Results Logs/cub_gate_20261106|CUB Gate Run]] · [[06 - Papers & Planning/Results Snapshot 2026-11-13|Results Snapshot (canonical)]]
 - [[01 - Literature & Theory/Joint Concept Coverage|Joint Concept Coverage]]
 - [[06 - Papers & Planning/Paper Split - CLeaR vs CVPR|Paper Split]] · [[06 - Papers & Planning/Roadmap and Gates|Roadmap]]
