@@ -6,6 +6,9 @@ date: 2026-11-11
 
 # 📖 Story: The CVPR Paper (Concept-Set Collapse / Raw-Annotation Regime)
 
+> [!IMPORTANT] PARKED (2026-11-13) — not part of the CLeaR submission
+> The user is **not submitting to CVPR 2027** (never registered). This arm is a **follow-up paper**; the story below and all CUB results stay archived and citable when that paper is revived. Nothing from here goes into the CLeaR submission.
+
 > The narrative arc for the CVPR arm, written down 2026-11-11 (recommended in
 > chat 2026-11-06, accepted 2026-11-11). Companion arc:
 > [[06 - Papers & Planning/Story - CLeaR Leakage Paper|CLeaR story]].

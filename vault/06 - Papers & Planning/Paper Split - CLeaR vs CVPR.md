@@ -4,22 +4,17 @@ tags: [planning, clear, cvpr, papers, program]
 date: 2026-11-06
 ---
 
-# ✂️ Paper Split: CLeaR vs CVPR
+# ✂️ Paper Program — CLeaR ONLY (2026-11-13: NOT submitting to CVPR)
 
-One research program, **two papers with disjoint questions**. Neither subsumes the other; the split below is settled.
+> [!IMPORTANT] Single-paper program (2026-11-13, user decision)
+> The user confirmed they are **not submitting to CVPR 2027** (registration was never recorded; the 10 Nov deadline passed). **Everything now targets CLeaR 2027** — full paper **16 Nov 2026, 11:59 pm AoE**. The collapse/CUB arm is **parked as a follow-up paper** (its story and results stay archived; nothing from it goes into the CLeaR submission). The CLeaR draft lives in `paper/main.tex` (+ `refs.bib`, README).
 
 ```mermaid
 flowchart TD
-    P[CCM Program] --> L["CLeaR paper<br/>Leakage / information use"]
-    P --> V["CVPR paper<br/>Joint concept uncertainty"]
-
-    L -->|dataset| S3D[Shapes3D<br/>+ MPI3D replication]
-    L -->|models| M1["CNN CBM, CNN CBM + residual,<br/>black-box reference"]
-    L -->|gate| G1["Set-based test detects something<br/>probability change does not"]
-
-    V -->|dataset| CUB[CUB-200-2011]
-    V -->|models| M2["Frozen DINOv2-base,<br/>linear concept head,<br/>linear label head on predicted concepts"]
-    V -->|gate| G2["Efficiency gain over global joint score<br/>and over induced baseline"]
+    P[CCM Program] --> L["CLeaR paper (LIVE)<br/>Causal coverage cost +<br/>targeted concept correction"]
+    P --> V["Collapse paper (PARKED)<br/>follow-up venue, not CLeaR"]
+    L -->|dataset| S3D[REAL 3dshapes grid]
+    V -->|dataset| CUB[CUB-200-2011<br/>archived in cub_gate]
 ```
 
 ## 1. The split
@@ -42,9 +37,10 @@ Theory each paper leans on:
 - **Matryoshka / nested concept budgets** (arXiv:2605.20612). It answers a *concept-budget* question, and its label sets are not comparable with concept-vector sets. Kept out of the first study.
 - **Nested conformal sets with adaptive stopping** are already covered by selection-safe conformal early exit (arXiv:2610.20773) — do not reinvent.
 
-## 3. Registration strategy
+## 3. Submission status (updated 2026-11-13)
 
-Per [[06 - Papers & Planning/Roadmap and Gates|Roadmap and Gates]]: **register the paper that passed its gate; treat the other as a secondary target.** CVPR 2027 registration is 10 Nov 2026 — the fixed point on the calendar.
+**CLeaR 2027: LIVE** — gate passed (D7), story current, draft at `paper/main.tex`, deadline 16 Nov AoE.
+**CVPR 2027: NOT SUBMITTING** (user decision; registration never completed). The CUB collapse work is a follow-up paper.
 
 ---
 

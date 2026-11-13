@@ -85,7 +85,7 @@ At $\rho{=}1$ the wall flip removes the correct label on **82%** of scenes (with
 
 1. **Step-3 gate: ✅ PASSED under D7 (settled 2026-11-13)** — §2b is the evidence. Remaining for CLeaR: **write the paper** (~3 days).
 2. **MPI3D-real as the next dataset (feasibility checked 2026-11-13):** 460,800 photos, 64×64, factors include **background colour (3)**, camera height (3), object size (2), shape (6) — maps directly onto this design ($U$ = background; the third background enables the calibrate-on-two / test-on-held-out-third transfer question). Official rr-learning download link is broken; working mirror: `mpi3d_real.npz` ≈ **12.8 GB** at [huggingface.co/datasets/waleedgondal/mpi3d](https://huggingface.co/datasets/waleedgondal/mpi3d). One-time download; the Shapes3D machinery (scene sampling, paired/four-image eval, `calibrate_paired`) ports directly.
-3. **CVPR registration status unrecorded** — confirm before investing further in the CVPR arm; if unregistered, CLeaR is the only live 16 Nov target.
+3. ✅ **RESOLVED (2026-11-13): NOT submitting to CVPR** (user decision; never registered). Single-paper program: CLeaR only. Collapse/CUB arm parked as a follow-up paper; draft at `paper/main.tex`.
 4. **D6** (Mondrian merge rule) — open; blocks any group-conditional coverage claim.
 5. CVPR second-dataset robustness run (§1).
 6. Paper writing: both stories 3 days from deadline; CLeaR story beat 3 must be rewritten if D7 is accepted. EditCLEVR stays follow-up work (question-selective response to edits).

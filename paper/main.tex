@@ -1,0 +1,358 @@
+% CLeaR 2027 submission — single-paper program (CVPR arm retired 2026-11-13).
+% Self-contained draft: swap \documentclass for the official CLeaR/PMLR class
+% (jmlr.cls, sample-pmlr) when the author kit is downloaded; content is sized
+% for ~8 pages + references. Numbers come from run logs in vault/04 - Results Logs
+% (CLeaR_Paired_Pilot_..._20261113_193524, Four-Image_2x2_..._20261113_200807,
+% CLeaR_Paired_Pilot_..._20261111_094725) and reproduce with scripts/clear_paired.py
+% and scripts/four_image.py.
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[numbers]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+\newcommand{\Sset}{\mathcal{S}}
+\newcommand{\Ex}{\mathbb{E}}
+
+\title{When the Background Changes the Answer:\\
+The Causal Coverage Cost of Nuisance Interventions\\
+in Concept Bottleneck Models}
+\author{Anonymous Author(s) \\ \small Preprint draft, November 2026}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Concept bottleneck models (CBMs) promise predictions that flow through declared,
+human-interpretable concepts, so that explanations and interventions can be
+trusted. We ask a causal question about that promise: \emph{if we change only a
+nuisance factor---the colour of the wall behind the object---does the model
+still include the correct label in its conformal prediction set?} On the real
+3dshapes grid, every scene has a true counterfactual render that differs only in
+the wall, which turns this question into a controlled paired intervention on a
+deployed pipeline. Under a training-induced shortcut (the wall perfectly
+predicts the size bucket at correlation $\rho=1$), ordinary conformal coverage
+is a mirage: 89\% per render, but the correct label survives \emph{both} walls
+on only 8.6\% of scenes---flipping the wall removes it on 82\%, and 66\% of
+those losses admit the same shape at the wrong size. The shortcut is a
+\emph{confident error}, not expressed ambiguity: size discrimination collapses
+from 0.89 to 0.47 with 35\% confident errors. We evaluate two repairs. Paired-max
+calibration---a max-score threshold over a scene's two renders---provably
+restores coverage under both specified nuisance settings ($\ge 1-\alpha$,
+empirically 0.90), but only by admitting both sizes (4.9 labels/set vs.\ 1.2;
+discrimination 0.16). A \emph{targeted concept correction}---replacing only the
+predicted scale concept with its ground-truth value---restores the lost label
+on 59\% of failures (an irrelevant object-hue correction: 4\%; clamping all
+concepts: 77\%) while preserving the size readout, and does so \emph{only} on
+the strict CBM: on a residual CBM every concept correction fails (0\%), because
+the wall flows through the residual channel outside the bottleneck. Concept
+correction is thus the only instrument that repairs the coverage cost while
+keeping the model informative---and only when the bottleneck is honest.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Concept bottleneck models \citep{koh2020concept} predict through a declared
+concept vector $C$ (object hue, scale, shape, orientation), so that a user can
+read the model's reasoning and, when it errs, repair the offending concept. The
+promise presupposes that the predictor uses \emph{only} the declared concepts.
+But a CBM sees the whole image, and the image contains more than the concepts:
+backgrounds, lighting, textures that may have correlated with the label in
+training. If the predictor leans on such a nuisance $U$, both the explanation
+and the intervention are untrustworthy in ways ordinary evaluation does not
+reveal.
+
+Two standard tools fail here. \textbf{Coverage is not a leak detector}: a
+conformal set \citep{vovk2005algorithmic,romano2020classification} can satisfy
+its marginal guarantee while the underlying predictor swings with $U$; a
+coverage miss does not diagnose leakage, and valid coverage does not certify
+its absence. \textbf{Correlational audits are weak}: accuracy gaps between the
+latent representation and the concept vector conflate ``could cheat'' with
+``does cheat'' (we report such an audit alongside our main results precisely
+because it fails to separate the two).
+
+We instead ask a causal question with a known intervention and a fixed outcome:
+\begin{quote}
+\emph{If we change only the wall colour, does the model still include the
+correct shape-and-size label in its prediction set?}
+\end{quote}
+The real 3dshapes grid \citep{burgess2018disentangling} makes this exactly
+answerable: for every scene (a declared-concept configuration), the grid
+contains a true photograph that differs \emph{only} in the wall palette. We
+train CBMs in which the wall--label correlation $\rho$ is controlled purely by
+training-data sampling, hold the model, the calibrated threshold, and the APS
+randomization fixed across a pair, and measure what the flip costs.
+
+\paragraph{What we find.} At $\rho=1$ (the wall is a perfect shortcut: it
+equals the size bucket of the label) ordinary calibration is a mirage---89\%
+coverage on each render, but only 8.6\% of scenes keep the correct label under
+\emph{both} walls (\S\ref{sec:results-cost}). The failure mode is a confident
+error: the model reads the size off the wall, so when wall and object disagree
+it confidently reports the wrong size (35\% of cases) rather than hedging
+(0.2\%). At $\rho=0.5$ the CBM does not take the half-dose bait (1.8\% loss).
+We then compare two instruments that could repair the damage
+(\S\ref{sec:results-repair}):
+
+\begin{enumerate}
+\item \textbf{Paired-max calibration} (a worst-case-score conformal threshold
+\citep{zargarbashi2024robust} applied to the two renders of a scene)
+provably restores coverage under both specified nuisance settings, but at
+4.9 labels/set---it restores coverage \emph{by admitting both sizes},
+destroying size discrimination (0.16).
+\item \textbf{Targeted concept correction}: on a wall-induced failure,
+replacing \emph{only} the predicted scale concept with its ground-truth value
+returns the correct label on 59\% of failures---against 4\% for an irrelevant
+object-hue correction and 77\% for clamping every concept---while leaving the
+model's size discrimination intact. On a residual CBM
+\citep{mahinpei2021promises}, the same corrections do \emph{nothing} (0\%):
+the wall flows through the residual channel, outside the bottleneck.
+\end{enumerate}
+
+\paragraph{Contributions.}
+(1) A causal, paired-intervention protocol for concept models with nuisance
+control $\rho$, true counterfactual partners, shared-randomization APS, and
+scene-level calibration splits;
+(2) the coverage-cost analysis: directional coverage loss, shortcut-substitution
+rate, and the confident-error diagnosis, showing marginal coverage is a mirage
+under a shortcut;
+(3) paired-max calibration for coverage under two specified nuisance settings,
+with a finite-sample guarantee, and the measurement of its price in set size
+and discrimination;
+(4) the targeted single-concept correction result with an irrelevant-concept
+control and a full-clamp reference, and its boundary: correction works exactly
+where the bottleneck is honest, and fails on residual channels.
+
+\section{Related Work}
+\label{sec:related}
+
+\textbf{Concept bottleneck models and leakage.} CBMs were introduced to make
+predictions intervenable \citep{koh2020concept}; subsequent work showed
+predicted concepts can leak task information \citep{margeloiu2021concept} and
+that black-box concept learners blur the bottleneck
+\citep{mahinpei2021promises}. Our contribution is orthogonal: we do not audit
+representations correlationally, but intervene on the image and measure the
+causal effect on a calibrated decision, connecting to the counterfactual
+invariance literature \citep{veitch2021counterfactual}, where the decision
+under study is membership in a coverage-guaranteed set rather than an argmax.
+
+\textbf{Conformal prediction.} Split conformal classification
+\citep{vovk2005algorithmic} with APS scores \citep{romano2020classification}
+and regularized variants \citep{angelopoulos2021uncertainty} provide
+distribution-free marginal coverage. Worst-case/robust score calibration
+\citep{zargarbashi2024robust} motivates our paired-max threshold. We differ in
+the object of the guarantee: coverage of the true label across two \emph{specified
+nuisance settings} of the same scene, enabled by a grid dataset with exact
+counterfactual partners.
+
+\textbf{Shortcut learning.} Background and context shortcuts are well
+documented \citep{geirhos2020shortcut,beery2018recognition}. We add a
+measurement of what a shortcut does to \emph{calibrated} decisions, and a
+repair analysis: calibration alone can undo the damage only by giving up
+discrimination; targeted concept repair undoes it without.
+
+\section{Setup: One-Sided Causal Testing under a Controlled Nuisance}
+\label{sec:setup}
+
+\paragraph{Generative framing.} Work under
+$Y = f(C), \quad X = g(C, U),$
+where $C$ is the declared concept vector, $U$ a nuisance excluded from $C$, and
+any $U$--$Y$ correlation is created \emph{only by training-data sampling}. Our
+claims are deliberately \emph{one-sided}: if flipping $U$ (holding $C$ fixed)
+moves the output, the model uses information beyond the declared concepts. A
+missed alarm is not a certificate of absence. If instead $Y=f(C,U)$, the same
+sensitivity indicates an \emph{incomplete concept list}, a distinct diagnosis
+we keep separate throughout.
+
+\paragraph{Real counterfactual pairs.} The 3dshapes grid contains every factor
+combination exactly once \citep{burgess2018disentangling}. We pin the floor to
+one level, define $U$ = wall hue at two palette levels, and $C$ =
+(object hue, scale, shape, orientation). For every sampled scene, its
+\emph{partner} (same $C$, other wall) is a real photograph. Labels are the
+composite $Y = 2\cdot\text{shape} + \text{size bucket}$ (8 classes), tuned so
+the bottleneck operates at 83--90\% accuracy with non-trivial sets. The
+correlation knob is
+$P(U{=}1 \mid Y{=}y) = \tfrac{1-\rho}{2} + \rho\,\mathbb{1}[y \bmod 2]$:
+at $\rho=1$ the wall \emph{is} the size bucket; at $\rho=0$ it is independent;
+marginally $Y=f(C)$ holds at every $\rho$ by construction. At $\rho=1$ the
+partner of every training image is outside the training set by construction.
+
+\paragraph{Scene-level splits.} Each sampled scene enters the dataset exactly
+once, with its $\rho$-assigned wall; partners are never dataset items. Splits
+are over scenes (60/20/20), drawn from $\rho$-independent streams, so the same
+scenes fall in the same splits at every dose. No-fill APS
+\citep{romano2020classification} is used throughout (filling empty sets
+inflates coverage by $P(\text{empty})\,P(\text{top-1 correct}\mid\text{empty})$).
+
+\begin{proposition}[Shared-randomization pairing]
+\label{prop:shared-u}
+Let $s(x,y;r)$ be a randomized APS score with draw $r$. If a pair
+$(x, x')$ is scored with the same $r$ and the model's logits are identical,
+the induced sets are identical. Hence the u-pairing null is exactly zero:
+measured set differences cannot be randomization artifacts.
+\end{proposition}
+
+\begin{theorem}[Paired-max calibration]
+\label{thm:paired}
+For calibration scenes $i$ with two renders $(x_{i,a}, x_{i,b})$ differing only
+in $U$, let $r_i \sim \mathrm{Unif}[0,1]$ i.i.d.\ and
+$M_i = \max\{s(x_{i,a},Y_i;r_i),\; s(x_{i,b},Y_i;r_i)\}$. Let $\hat q$ be the
+$\lceil (n{+}1)(1{-}\alpha)\rceil$-th order statistic of $\{M_i\}$. Then for a
+fresh exchangeable test scene with the same protocol,
+$P\big[Y \in \Sset(x_a) \cap \Sset(x_b)\big] \ge 1-\alpha.$
+\end{theorem}
+
+\begin{proof}
+$M \le \hat q$ iff both render scores are $\le \hat q$ iff the label is in
+both sets; $M$ is a valid nonconformity score over exchangeable
+(scene, $r$) pairs with a frozen model, so the standard split-conformal rank
+argument applies \citep{vovk2005algorithmic}.
+\end{proof}
+
+The guarantee covers the two \emph{specified} nuisance settings; the two sets
+may still differ in which wrong labels they admit. Prediction on a single render
+uses the ordinary pipeline with threshold $\hat q$.
+
+\paragraph{The four-image design.} For a held-out scene we evaluate all four
+renders $\{\text{size}\in\{s, s'\}, \text{wall}\in\{a, b\}\}$, where $s'$ is
+the boundary-adjacent scale level across the size-bucket boundary (all four are
+real grid images), with the model, threshold, and a single APS draw shared
+across the group. This separates (i) \emph{nuisance sensitivity}: at fixed
+size, does flipping the wall remove the correct label; (ii) \emph{concept
+sensitivity}: at fixed wall, does the set keep its own label and exclude the
+other size (discrimination), admit both (ambiguity), or confidently err; and
+(iii) \emph{correction}: on a wall-induced loss, does replacing one predicted
+concept coordinate with its ground-truth value return the correct label? We
+test the scale concept (relevant), object hue (irrelevant control), and the
+full clamp (reference), implemented through the model's partial-intervention
+interface.
+
+\section{Experiments}
+\label{sec:experiments}
+
+\textbf{Data:} real 3dshapes HDF5 (480k grid), $n=4800$ (600/class), floor
+pinned, wall levels $\{1,8\}$. \textbf{Models:} strict CBM (CNN backbone
+$\to$ concept head $\to$ label head on predicted concepts); residual CBM
+(+ residual channel from the backbone); black-box (no bottleneck; no concept
+interface, correction undefined). 8 epochs, batch 64, AdamW; $\alpha=0.10$.
+\textbf{Doses:} $\rho \in \{0, 0.5, 1\}$, matched scenes, splits and seeds
+across doses. Full per-cell tables (including a first 3-model grid at
+$\rho\in\{0,1\}$, sanity nulls, and Test-1 attribution) are in the run logs;
+sanity $(x,x)$ set-change was exactly $0.000$ in every cell.
+
+\subsection{The causal coverage cost}
+\label{sec:results-cost}
+
+\begin{table}[h]
+\centering
+\caption{Dose-response, plain CBM. ``cov-both'' = $P[Y \in S(x) \cap S(x')]$
+under ordinary calibration; ``paired'' = paired-max calibration
+(Thm.~\ref{thm:paired}); ``subst'' = wrong-size substitute entering among
+losses. $\alpha = 0.10$.}
+\label{tab:dose}
+\begin{tabular}{cccccccc}
+\toprule
+$\rho$ & cov & size & dir.\ loss & cov-both & subst & paired cov-both & paired size \\
+\midrule
+0   & 0.891 & 1.08 & 0.015 & 0.891 & 0.00 & 0.913 & 1.16 \\
+0.5 & 0.895 & 1.15 & 0.018 & 0.877 & 0.00 & 0.905 & 1.24 \\
+1   & 0.891 & 0.99 & \textbf{0.819} & \textbf{0.086} & 0.656 & \textbf{0.901} & \textbf{4.93} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:dose}: at $\rho=1$, per-render coverage is nominal (0.891) yet
+coverage under both walls collapses to 0.086---the wall flip removes the
+correct label on 82\% of scenes, and in 66\% of those losses the same shape at
+the \emph{wrong} size enters the set: the model swaps the size bucket with the
+wall. Paired-max calibration restores cov-both to 0.901---at its
+guarantee---but at 4.93 labels/set. At $\rho=0.5$ the CBM does not take the
+bait (1.8\% loss): a concept-supervised bottleneck resists a half-strength
+shortcut.
+
+\subsection{Confident errors, and what repairs them}
+\label{sec:results-repair}
+
+\begin{table}[h]
+\centering
+\caption{Four-image 2$\times$2 (wall $\times$ size), 400 held-out groups,
+shared threshold and APS draw. ``disc'' = own label in, other size out;
+``conf.\ err'' = own out, other in. Correction rates are $P[\text{correct label
+returns} \mid \text{wall-induced loss}]$; $n_{\text{fail}}$ = 334/337.}
+\label{tab:fourimage}
+\begin{tabular}{llccccccc}
+\toprule
+model & $\rho$ & thr & own-cov & nuis.\ loss (A$\to$B / B$\to$A) & disc & conf.\ err & scale-fix & hue-fix / clamp \\
+\midrule
+cbm & 0 & ord & 0.894 & .018 / .052 & 0.894 & 0.000 & --- & --- \\
+cbm & 1 & ord & 0.471 & .905 / .817 & 0.469 & \textbf{0.351} & \textbf{0.593} & 0.042 / 0.769 \\
+cbm & 1 & paired & 0.946 & .175 / .040 & \textbf{0.157} & 0.054 & --- & --- \\
+residual & 1 & ord & 0.474 & .842 / .873 & 0.467 & 0.329 & \textbf{0.000} & 0.000 / 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The shortcut is a confident error, not ambiguity} (Table~\ref{tab:fourimage}):
+at $\rho=1$ size discrimination falls from 0.894 to 0.469 with 35\% confident
+errors and only 0.2\% ``both sizes'' sets. The model is not expressing
+uncertainty; it is reading the size off the wall.
+
+\textbf{Targeted correction works where the bottleneck is honest.} Replacing
+only the predicted \emph{scale} concept with ground truth returns the correct
+label on 59\% of wall-induced failures; the irrelevant \emph{object-hue}
+correction returns 4\%, and clamping all concepts 77\%. One semantically
+relevant edit recovers most of the full clamp's power. Attribution explains
+the mechanism: with ground-truth concepts clamped (Test 1) the strict CBM's
+set-change is exactly zero at both doses (its leakage enters through the
+concept head, which the correction fixes), whereas the residual model's is
+0.93 (the residual channel is an $x$-path no concept edit can reach).
+
+\textbf{Calibration cannot buy both.} Paired-max restores own-coverage to 0.946
+under both walls, but discrimination collapses to 0.157 with 79\% ambiguous
+sets. Targeted correction is the only instrument that restores coverage while
+preserving the model's ability to distinguish a genuine change in object size.
+
+\section{Limitations and Scope}
+\label{sec:limits}
+
+The alarm is one-sided: silence is not a certificate of leakage-freedom, and
+under $Y=f(C,U)$ the same sensitivity indicates an incomplete concept list
+rather than leakage. The paired-max guarantee covers two \emph{specified}
+nuisance settings and requires paired renders at calibration; extending beyond
+two settings multiplies the calibration cost. Results are on one controllable
+grid dataset (real photographs, but a synthetic world); the design transfers
+directly to MPI3D-real, where three background colours allow calibrate-on-two /
+test-on-held-out-third transfer, which we leave to future work. The
+correlational nn-audit run alongside (gap vs.\ a null from $z$
+re-synthesized from $c$) moved little across doses ($0.33\to0.56$) and did not
+separate the regimes---a negative result we report deliberately.
+
+\section{Conclusion}
+
+Marginal conformal coverage can look perfect while a nuisance channel quietly
+decides the answer. On true counterfactual pairs we measure that cost
+directly: under a perfect shortcut, the correct label survives both walls on
+8.6\% of scenes, and the errors are confident. A worst-case calibration
+restores the guarantee by surrendering discrimination; a single targeted
+concept correction restores most of the loss while keeping the model
+informative---and fails exactly, and measurably, when the bottleneck is not
+honest. Concept repair is real, but only as real as the bottleneck.
+
+\subsubsection*{Reproducibility}
+All experiments run end-to-end from this repository
+(\texttt{scripts/clear\_paired.py}, \texttt{scripts/four\_image.py},
+\texttt{configs/clear\_paired\_shapes3d\_real.yaml}); scene-level splits,
+shared-$u$ APS, paired-max calibration and the correction interface are in
+\texttt{ccm.\{conformal,interventions,data\}} with unit tests (49 passing).
+No-fill APS is used everywhere; every number above appears in the cited run
+logs.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}
