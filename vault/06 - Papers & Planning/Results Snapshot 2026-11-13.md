@@ -61,7 +61,7 @@ At $\rho{=}1$ the wall flip removes the correct label on **82%** of scenes (with
 2. **A single relevant concept correction repairs the strict CBM**: replacing only the predicted *scale* concept restores the lost label on **59%** of wall-induced failures (irrelevant hue correction: 4%; full clamp: 77%) — most of the clamp's power from one targeted edit.
 3. **The boundary**: the SAME corrections do nothing (0.000) on the residual model — wall information flows through the residual channel, outside the bottleneck, and no concept edit can reach it. And paired-max calibration restores coverage (0.892 cov-both) only by destroying size discrimination (0.157). **Targeted correction is the only instrument that restores coverage while preserving the size readout.**
 
-**D7 verdict: the coverage-cost framing is empirically strong — recommend adopting** (rewrites CLeaR story beat 3); final sign-off still the user's.
+**D7 SETTLED (2026-11-13, user sign-off):** the coverage-cost framing is adopted; the CLeaR story's beats 3–5 were rewritten around the causal question and the correction result ("sets detect what probabilities miss" retired as the gate). Step-3 gate: **passed**.
 
 ## 3. Repo / code state (review rounds 2026-11-07, commits `994b9f2` → `0267949`)
 
@@ -73,7 +73,7 @@ At $\rho{=}1$ the wall flip removes the correct label on **82%** of scenes (with
 
 ## 4. Open items this snapshot leaves
 
-1. **Step-3 gate (D7):** the 2026-11-13 runs (§2b) give the coverage-cost framing its evidence — wall flip costs the answer at $\rho{=}1$ (82% directional loss), a targeted scale correction restores 59% (control 4%) on the strict CBM only, and paired-max trades discrimination for coverage. **Remaining for the paper: user sign-off on D7 (story beat 3 rewrite), then writing.**
+1. **Step-3 gate: ✅ PASSED under D7 (settled 2026-11-13)** — §2b is the evidence. Remaining for CLeaR: **write the paper** (~3 days).
 2. **MPI3D-real as the next dataset (feasibility checked 2026-11-13):** 460,800 photos, 64×64, factors include **background colour (3)**, camera height (3), object size (2), shape (6) — maps directly onto this design ($U$ = background; the third background enables the calibrate-on-two / test-on-held-out-third transfer question). Official rr-learning download link is broken; working mirror: `mpi3d_real.npz` ≈ **12.8 GB** at [huggingface.co/datasets/waleedgondal/mpi3d](https://huggingface.co/datasets/waleedgondal/mpi3d). One-time download; the Shapes3D machinery (scene sampling, paired/four-image eval, `calibrate_paired`) ports directly.
 3. **CVPR registration status unrecorded** — confirm before investing further in the CVPR arm; if unregistered, CLeaR is the only live 16 Nov target.
 4. **D6** (Mondrian merge rule) — open; blocks any group-conditional coverage claim.

@@ -59,10 +59,12 @@ that separates label-head leakage from concept-head drift.
 The $\rho_{\text{train}}=0$ null for Test 2 **must be measured before the main
 grid** (it is the reference line every $\rho{=}1$ number is compared against).
 
-The step-3 **gate** is unchanged either way: a model exploiting $U$ (e.g. the CBM
-**with residual channel** at $\rho_{\text{train}}=1$) should show set changes beyond
-its $\rho_{\text{train}}=0$ null **even when the marginal probability of $Y$ barely
-moves** — the set-based test detects dependence that probability-sensitivity misses.
+The step-3 gate under **D7 (settled 2026-11-13, user sign-off)**: the **causal
+coverage cost** of the $U$-flip — does the correct label stay in the set? — and
+whether a **targeted concept correction** restores it (paired-max calibration as
+the guaranteed-but-blunt alternative). The old "sets detect what
+probability-sensitivity misses" framing is **retired** (APS sets are functions
+of the probabilities); set-change rates remain as descriptive texture only.
 
 ## 3. Implementation status (2026-11-11)
 
