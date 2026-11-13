@@ -12,11 +12,11 @@ This dashboard tracks all training and evaluation runs for Conformal Concept Mod
 | Date | Run / Note Link | Dataset | Task Acc | Concept Acc | Conformal Cov | Avg Set Size |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 <!-- RUNS_TABLE_BODY -->
-| 2026-11-13 | [[04 - Results Logs/Four-Image_2x2_(wall_x_size)_20261113_200807|Four-Image 2x2 (wall x size)]] | `four-image` | - | - | - | - |
+| 2026-11-13 | [[04 - Results Logs/Four-Image_2x2_(wall_x_size)_20261113_200807|Four-Image 2x2 (wall x size)]] | `four-image` (ρ=1 cbm, ord) | 0.942* | 0.952 | **0.471** (own-cov) | 0.99 |
 
-| 2026-11-13 | [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261113_193524|CLeaR Paired Pilot clear_paired_shapes3d_real]] | `clear-paired-pilot` | - | - | - | - |
+| 2026-11-13 | [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261113_193524|CLeaR Paired Pilot clear_paired_shapes3d_real]] | `clear-paired-pilot` (ρ=0/0.5/1 cbm) | 0.900/0.881/0.942 | 0.952 | 0.891/0.895/0.891 | 1.08/1.15/0.99 |
 
-| 2026-11-11 | [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261111_094725|CLeaR Paired Pilot clear_paired_shapes3d_real]] | `clear-paired-pilot` | - | - | - | - |
+| 2026-11-11 | [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_real_20261111_094725|CLeaR Paired Pilot clear_paired_shapes3d_real]] | `clear-paired-pilot` (ρ=0/1, 3 models) | 0.834–1.000 | 0.952 | 0.878–0.905 | 0.88–1.36 |
 
 | 2026-11-11 | [[04 - Results Logs/CLeaR_Paired_Pilot_clear_paired_shapes3d_20261111_092746|CLeaR Paired Pilot clear_paired_shapes3d]] | `clear-paired-pilot` | - | - | - | - |
 
@@ -45,6 +45,10 @@ This dashboard tracks all training and evaluation runs for Conformal Concept Mod
 
 | 2026-10-29 | [[03 - Experiments/CLEAR_Audit_Shapes3D|Shapes3D Initial Baseline]] | `shapes3d` | 0.942 | 0.965 | 0.912 | 1.15 |
 | 2026-10-29 | [[03 - Experiments/CVPR_Pilot_CUB|CUB Pilot Benchmark]] | `cub` | 0.885 | 0.921 | 0.908 | 1.84 |
+
+---
+
+*Four-image row: Task Acc is the underlying model's single-render accuracy (ρ=1 cell); the run's own metrics are the 2×2 readouts (own-cov 0.471, size-disc 0.469, scale-fix 0.593 vs hue 0.042, residual 0.000) — see the log. Dose-response row: cov-both collapses 0.891→0.086 at ρ=1; paired-max restores 0.901 at 4.93 labels/set.*
 
 ---
 

@@ -12,6 +12,16 @@ date: 2026-11-13
 
 ## 1. CUB (CVPR arm) — unchanged since the gate run
 
+> **Dataset inventory (2026-11-13).** Three dataset variants across two families have been **worked** (16 run logs total); two more are planned.
+>
+> | Dataset / variant | Paper | Runs | Status |
+> | :--- | :--- | :---: | :--- |
+> | **3dshapes, REAL official grid** (480k HDF5) | CLeaR | 3 | ✅ **canonical** — 2026-11-11 first grid, 2026-11-13 dose-response + four-image 2×2 (§2, §2b) |
+> | **CUB-200-2011** (real, local DINOv2 pipeline) | CVPR | 5 | ✅ **canonical** = `cub_gate` only (§1 below); the other 4 `cvpr_pilot_cub` runs INVALID (undertrained) |
+> | **Shapes3D procedural generator** (synthetic) | fixture | 8 | 🗄 legacy/superseded (saturated or synthetic pilots; nn audits pre-v1-fix); now the unit-test fixture |
+> | MPI3D-real (460,800 photos) | CLeaR ext. | 0 | 📋 planned (§4 item 2) |
+> | EditCLEVR | follow-up | 0 | 📋 planned (question-selective edits) |
+
 All numbers live in [[04 - Results Logs/cub_gate_20261106|cub_gate_20261106]] and are re-stated in [[06 - Papers & Planning/Story - CVPR Collapse Paper|the CVPR story]]: the collapse (induced 8.5 ambiguous vs 55.3/57.8 at matched 0.90 joint; induced joint coverage ≡ label coverage, 0.900 vs 0.898) and the raw-312 $(m{+}1)$ frontier (306.5 → 104.2 → 30.6 ambiguous at $m = 0/16/40$, guarantee exact at every $m$). No new CUB runs since. The gate machinery is now **in the library** (`ccm.conformal.m_plus_one_score`, `conformal_quantile_per_column`, `induced_concept_sets`, `calibrate_concepts(joint_m=…)`).
 
 **Open robustness item:** one raw-annotation second dataset (e.g. CelebA-style per-image attributes) to show the frontier generalizes — the largest remaining review risk for the CVPR arm.
