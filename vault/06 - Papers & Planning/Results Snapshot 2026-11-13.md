@@ -44,11 +44,11 @@ All numbers live in [[04 - Results Logs/cub_gate_20261106|cub_gate_20261106]] an
 
 ## 4. Open items this snapshot leaves
 
-1. **Step-3 gate:** $\rho = 0.5$ dose-response run (the one experiment between here and the CLeaR gate).
+1. **Step-3 gate (D7 recommendation, 2026-11-13 external review — verified):** reframe from "sets detect what probabilities miss" (APS sets are computed from those probabilities; the pilot's prob-shift separates as strongly as the sets) to the **causal coverage-cost question**: directional loss under the wall flip, same-shape/wrong-scale substitution (at $\rho{=}1$ the wall IS the scale bucket), and **paired-max calibration** as the remedy. Next run: plain CBM at $\rho \in \{0, 0.5, 1\}$, ordinary vs paired-max on the same fitted model, coverage-under-both-walls vs set size. **Code enablers landed 2026-11-13:** scene-level sampling/splits (partners can no longer cross folds; matched scenes and seeds across doses), `calibrate_paired`, per-pair cost readouts, exact $\rho$ metric keys (`int(rho)` collision and a matching seed collision fixed). All pending user sign-off on the D7 reframe.
 2. **CVPR registration status unrecorded** — confirm before investing further in the CVPR arm; if unregistered, CLeaR is the only live 16 Nov target.
 3. **D6** (Mondrian merge rule) — open; blocks any group-conditional coverage claim.
 4. CVPR second-dataset robustness run (§1).
-5. Paper writing: both stories ([[06 - Papers & Planning/Story - CLeaR Leakage Paper|CLeaR]], [[06 - Papers & Planning/Story - CVPR Collapse Paper|CVPR]]) are 3 days from deadline.
+5. Paper writing: both stories ([[06 - Papers & Planning/Story - CLeaR Leakage Paper|CLeaR]], [[06 - Papers & Planning/Story - CVPR Collapse Paper|CVPR]]) are 3 days from deadline; CLeaR story beat 3 must be rewritten if D7 is accepted.
 
 ---
 

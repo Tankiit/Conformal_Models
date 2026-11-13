@@ -324,21 +324,26 @@ class PairedEvalDataset(Dataset):
     Wraps a paired-mode Shapes3DDataset and yields (x, x_flip, c_true) items --
     the exact batches ccm.interventions.paired_set_change consumes. Both members
     share the declared concepts AND the per-sample noise seed; they differ only
-    in the nuisance palette.
+    in the nuisance palette. with_labels=True yields (x, x_flip, c_true, y_true)
+    so paired_set_change can compute the coverage-cost readouts.
     """
 
-    def __init__(self, base: Shapes3DDataset, indices: Optional[Sequence[int]] = None):
+    def __init__(self, base: Shapes3DDataset, indices: Optional[Sequence[int]] = None,
+                 with_labels: bool = False):
         if not getattr(base, "paired", False):
             raise ValueError("PairedEvalDataset needs a paired-nuisance Shapes3DDataset")
         self.base = base
         self.indices = None if indices is None else list(indices)
+        self.with_labels = with_labels
 
     def __len__(self) -> int:
         return len(self.base) if self.indices is None else len(self.indices)
 
     def __getitem__(self, idx: int):
         j = idx if self.indices is None else self.indices[idx]
-        x, c, _, _ = self.base[j]
+        x, c, y, _ = self.base[j]
+        if self.with_labels:
+            return x, self.base.flip(j), c, y
         return x, self.base.flip(j), c
 
 

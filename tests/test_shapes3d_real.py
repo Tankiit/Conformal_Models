@@ -71,21 +71,47 @@ def test_items_are_four_tuples_with_u_out_of_concepts(grid_npz):
 
 
 def test_rho_counts_exact_by_construction(grid_npz):
-    # fixture pool per (class, palette) = 3 obj x 3 orient x 2 scale-levels = 18
-    POOL = 18
+    # fixture SCENE pool per class = obj 3 x scale-in-bucket 2 x orient 3 = 18
+    # (scene-level sampling, 2026-11-13: one item per scene; rho assigns walls)
+    SCENE_POOL = 18
     for rho in (0.0, 0.5, 1.0):
         ds = _real(grid_npz, n=240, rho=rho)
-        n_target = 240 // 8  # 30
+        n_cap = min(240 // 8, SCENE_POOL)  # 30 wanted, capped at 18 scenes
         for yy in range(ds.num_classes):
             mask = ds.labels == yy
             n = int(mask.sum())
             n1 = int((mask & (ds.u == 1)).sum())
             p = (1 - rho) / 2 + rho * (yy % 2)
-            n1_want, n0_want = round(n_target * p), n_target - round(n_target * p)
-            assert n1 == min(n1_want, POOL), (rho, yy, n1)       # exact until capped
-            assert n == min(n1_want, POOL) + min(n0_want, POOL)  # never topped up
+            assert n == n_cap, (rho, yy, n)              # capped at the scene pool
+            assert n1 == round(n_cap * p), (rho, yy, n1)  # exact by construction
         if rho == 1.0:
             assert torch.equal(ds.u, ds.labels % 2)  # survives capping
+        # one item per scene: no scene (combo) appears with both walls
+        assert len(torch.unique(ds.scene_ids)) == len(ds)
+
+
+def test_same_scenes_and_disjoint_splits_across_doses(grid_npz):
+    def split_scenes(rho):
+        cfg = {
+            "seed": 0,
+            "data": {"h5_file": grid_npz, "num_samples": 200, "rho": rho,
+                     "scale_buckets": 2, "floor_level": 0, "u_levels": [1, 3]},
+            "training": {"batch_size": 64},
+        }
+        out = get_real_paired_shapes3d_loaders(cfg)
+        ds = out["pairs_test"].dataset.base
+        parts = []
+        for key in ("train", "calib", "test"):
+            idx = out[key].dataset.indices
+            parts.append(set(ds.scene_ids[torch.tensor(idx)].tolist()))
+        return parts
+
+    tr0, ca0, te0 = split_scenes(0.0)
+    tr1, ca1, te1 = split_scenes(1.0)
+    # matched scenes AND matched split across doses (rho-independent streams)
+    assert tr0 == tr1 and ca0 == ca1 and te0 == te1
+    # scene-disjoint splits: a scene's two renders can never cross folds
+    assert not (tr0 & ca0) and not (tr0 & te0) and not (ca0 & te0)
 
 
 def test_composite_label_consistent_with_concepts(grid_npz):
@@ -111,11 +137,11 @@ def test_flip_partner_same_c_different_wall(grid_npz):
 
 
 def test_pool_cap_warns_and_caps(grid_npz):
-    # per (y, u) pool = 18 -> class cap 36 at rho=0.5
+    # scene pool per class = 18 -> cap at 8*18 items
     ds = RealShapes3DPairedDataset(
         grid_npz, num_samples=10_000, rho=0.5, seed=0, u_levels=(1, 3)
     )
-    assert len(ds) == 8 * 36
+    assert len(ds) == 8 * 18
     assert len(ds) < 10_000
 
 
@@ -150,8 +176,10 @@ def test_loader_metadata_and_pairs(grid_npz):
     n_pairs = sum(b[0].shape[0] for b in out["pairs_test"])
     n_test = sum(b[0].shape[0] for b in out["test"])
     assert n_pairs == n_test == len(out["test"].dataset)
-    # PairedEvalDataset feeds paired_set_change directly (shape contract)
-    for x, x_flip, c_true in out["pairs_test"]:
+    # PairedEvalDataset feeds paired_set_change directly (shape contract;
+    # with_labels=True adds y so the coverage-cost readouts can be computed)
+    for x, x_flip, c_true, y in out["pairs_test"]:
         assert x.shape == x_flip.shape and c_true.shape == (x.shape[0], 4)
+        assert y.shape == (x.shape[0],)
         assert not torch.equal(x, x_flip)
         break

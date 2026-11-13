@@ -268,11 +268,12 @@ def evaluate_intervention_curve(
 def paired_set_change(
     cbm_model: torch.nn.Module,
     calibrator: Any,
-    pairs: Iterable[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    pairs: Iterable[Tuple[torch.Tensor, ...]],
     use_gt_concepts: bool,
     seed: int = 0,
     alpha: Optional[float] = None,
     score_fn: Optional[NonconformityScore] = None,
+    substitution_labels: Optional[torch.Tensor] = None,
 ) -> Dict[str, Any]:
     """
     Paired nuisance-flip evaluation for the CLeaR leakage test (Shapes3D U-flip
@@ -285,23 +286,30 @@ def paired_set_change(
     identical sets, so the u-pairing null is exactly zero (verify with (x, x)
     pairs as a sanity check before the main grid).
 
+    `pairs` batches may be (x, x_flip, c_true) or (x, x_flip, c_true, y_true).
+    When labels are present the COST readouts are computed (2026-11-13 review):
+    coverage under each wall, coverage under BOTH, directional loss/gain (how
+    often breaking the shortcut REMOVES a previously covered true label), and --
+    with `substitution_labels` (e.g. the same-shape/wrong-scale class Y^1 for
+    the composite encoding) -- how often the shortcut substitute enters the set
+    exactly where the true label was lost, plus the empty-set transition rate
+    (no-fill APS makes empties possible).
+
     Variants (this IS the D5 choice -- it defines what the CLeaR claim means):
-      - use_gt_concepts=True (Test 1, ground-truth-concepts-fixed): both members
-        scored through the label head with concepts fixed to c_true via the
-        intervention interface. A strict label head f(c) gives EXACTLY zero
-        set-change by construction; any change reveals an x-path into the
-        prediction (e.g. the hybrid residual channel). Isolates the label head.
-      - use_gt_concepts=False (Test 2, predicted concepts -- the whole deployed
-        pipeline): the concept head sees the whole image, wall colour included,
-        so U can move the PREDICTED concepts and change sets without label-head
-        leakage. Zero set-change is NOT the leak-free signature in this variant:
-        the null is the set-change rate measured at rho_train = 0 with the same
-        pipeline (no shortcut available). Run that null before the main grid.
+      - use_gt_concepts=True (Test 1): strict label head f(c) gives EXACTLY zero
+        set-change by construction; any change reveals an x-path (residual).
+      - use_gt_concepts=False (Test 2, deployed pipeline): zero set-change is
+        NOT the leak-free signature; the null is the rho_train=0 measured rate.
 
     Returns dict with set_change_rate, mean_prob_shift_l1, per-pair tensors
-    ("changed", "prob_shifts"), n_pairs, and the variant used.
+    ("changed", "prob_shifts", and with labels also "contains_x",
+    "contains_x_flip", "set_sizes_x", "set_sizes_x_flip"), n_pairs, the variant,
+    and the cost readouts when labels are given.
     """
-    score_fn = score_fn or APSScore(from_logits=True, randomized=True)
+    # Default to the CALIBRATOR's own score: its threshold was calibrated under
+    # that score, so silently substituting another one mismatches threshold and
+    # scores (empty/garbage sets).
+    score_fn = score_fn or getattr(calibrator, "score_fn", None) or APSScore(from_logits=True, randomized=True)
     alpha_val = alpha if alpha is not None else getattr(calibrator, "default_alpha", 0.10)
     if alpha_val in getattr(calibrator, "calibrated_alphas", {}):
         threshold = calibrator.calibrated_alphas[alpha_val]
@@ -315,8 +323,18 @@ def paired_set_change(
     g = torch.Generator().manual_seed(seed)
 
     changed_all, shift_all = [], []
+    contains_x_all, contains_f_all = [], []
+    size_x_all, size_f_all = [], []
+    sub_in_flip_all = []
+    n_seen = 0
     with torch.no_grad():
-        for x, x_flip, c_true in pairs:
+        for batch in pairs:
+            if len(batch) == 4:
+                x, x_flip, c_true, y_true = batch
+                y_true = y_true.to(device).long()
+            else:
+                x, x_flip, c_true = batch[:3]
+                y_true = None
             x, x_flip, c_true = x.to(device), x_flip.to(device), c_true.to(device)
             B = x.shape[0]
             if use_gt_concepts:
@@ -335,7 +353,8 @@ def paired_set_change(
             else:
                 scores = score_fn(both, None)
             mask = scores <= threshold
-            changed = (mask[:B] != mask[B:]).any(dim=-1)
+            mask_x, mask_flip = mask[:B], mask[B:]
+            changed = (mask_x != mask_flip).any(dim=-1)
 
             p = F.softmax(logits, dim=-1)
             p_flip = F.softmax(logits_flip, dim=-1)
@@ -343,14 +362,48 @@ def paired_set_change(
 
             changed_all.append(changed.cpu())
             shift_all.append(shift.cpu())
+            size_x_all.append(mask_x.sum(dim=-1).cpu())
+            size_f_all.append(mask_flip.sum(dim=-1).cpu())
+            if y_true is not None:
+                batch_idx = torch.arange(B, device=device)
+                contains_x_all.append(mask_x[batch_idx, y_true].cpu())
+                contains_f_all.append(mask_flip[batch_idx, y_true].cpu())
+                if substitution_labels is not None:
+                    sub = substitution_labels[n_seen:n_seen + B].to(device).long()
+                    sub_in_flip_all.append(mask_flip[batch_idx, sub].cpu())
+            n_seen += B
 
     changed = torch.cat(changed_all)
     shifts = torch.cat(shift_all)
-    return {
+    sizes_x = torch.cat(size_x_all)
+    sizes_flip = torch.cat(size_f_all)
+    out: Dict[str, Any] = {
         "set_change_rate": float(changed.float().mean().item()),
         "mean_prob_shift_l1": float(shifts.mean().item()),
         "n_pairs": int(len(changed)),
         "changed": changed,
         "prob_shifts": shifts,
+        "set_sizes_x": sizes_x,
+        "set_sizes_x_flip": sizes_flip,
         "use_gt_concepts": use_gt_concepts,
     }
+    if contains_x_all:
+        cx = torch.cat(contains_x_all)
+        cf = torch.cat(contains_f_all)
+        lost = cx & ~cf  # covered under x, lost under the flipped nuisance
+        gained = cf & ~cx
+        out.update({
+            "contains_x": cx,
+            "contains_x_flip": cf,
+            "coverage_x": float(cx.float().mean().item()),
+            "coverage_x_flip": float(cf.float().mean().item()),
+            "coverage_both": float((cx & cf).float().mean().item()),
+            "directional_loss": float(lost.float().mean().item()),
+            "directional_gain": float(gained.float().mean().item()),
+        })
+        if int(lost.sum()) > 0:
+            out["empty_flip_given_lost"] = float((sizes_flip[lost] == 0).float().mean().item())
+        if sub_in_flip_all:
+            sub_mask = torch.cat(sub_in_flip_all)
+            out["substitution_rate_given_lost"] = float(sub_mask[lost].float().mean().item()) if int(lost.sum()) > 0 else 0.0
+    return out

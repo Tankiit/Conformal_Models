@@ -127,11 +127,60 @@ class ConformalCalibrator:
         alpha_val = alpha if alpha is not None else self.default_alpha
         calib_scores = self.score_fn(logits_or_probs, targets)
         q_hat = compute_conformal_quantile(calib_scores, alpha_val)
-        
+
         self.calibrated_alphas[alpha_val] = q_hat
         if alpha is None or alpha == self.default_alpha:
             self.q_hat = q_hat
         return q_hat
+
+    def calibrate_paired(
+        self,
+        logits_a: torch.Tensor,
+        logits_b: torch.Tensor,
+        targets: torch.Tensor,
+        alpha: Optional[float] = None,
+        seed: int = 0,
+        store_key: Optional[str] = None,
+    ) -> float:
+        """
+        Paired-max calibration: guarantees coverage under BOTH renders of a scene.
+
+        For calibration scene i with two renders (x_a, x_b) that differ only in a
+        nuisance (e.g. wall colour) and a SHARED randomization draw r_i:
+            M_i = max{ s(x_a, y_i; r_i), s(x_b, y_i; r_i) }
+        The usual split-conformal quantile of the M_i then gives, by the rank
+        argument over exchangeable (scene, r) pairs with a frozen model,
+            P[ y in S(x_a) AND y in S(x_b) ] >= 1 - alpha
+        for a fresh scene across the two specified nuisance settings. The two
+        sets may still differ in which WRONG labels they admit. Prediction on a
+        single render uses the ordinary pipeline with this threshold; the
+        randomization draw must follow the same protocol (shared within pairs).
+        Precedent: worst-case/robust conformal score calibration.
+
+        Requires scene-level splits: calibration and test scenes must be
+        disjoint (partners crossing folds would break scene exchangeability).
+        """
+        alpha_val = alpha if alpha is not None else self.default_alpha
+        g = torch.Generator().manual_seed(seed)
+        B = logits_a.shape[0]
+        u = torch.rand(B, 1, generator=g)
+
+        s_a = self._call_score_with_uniforms(logits_a, targets, u)
+        s_b = self._call_score_with_uniforms(logits_b, targets, u)
+        m = torch.maximum(s_a, s_b)
+        q_hat = compute_conformal_quantile(m, alpha_val)
+
+        key = store_key if store_key is not None else alpha_val
+        self.calibrated_alphas[key] = q_hat
+        return q_hat
+
+    def _call_score_with_uniforms(
+        self, logits_or_probs: torch.Tensor, targets: torch.Tensor, u: torch.Tensor
+    ) -> torch.Tensor:
+        """Scores of the TRUE targets under explicit shared uniforms (APS-family)."""
+        if isinstance(self.score_fn, APSScore) and self.score_fn.randomized:
+            return self.score_fn(logits_or_probs, targets, uniforms=u.squeeze(1))
+        return self.score_fn(logits_or_probs, targets)
 
     def predict(
         self,

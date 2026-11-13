@@ -200,6 +200,35 @@ def test_mondrian_small_group_fallback_is_flagged():
     assert calibrator.group_thresholds[1] == calibrator.default_threshold
 
 
+def test_calibrate_paired_coverage_under_both_renders():
+    torch.manual_seed(5)
+
+    def make(n, K=5):
+        base = torch.randn(n, K)
+        a = base + 0.15 * torch.randn(n, K)
+        b = base + 0.15 * torch.randn(n, K)  # two renders of the same scene
+        y = torch.randint(0, K, (n,))
+        return a, b, y
+
+    ca, cb, cy = make(600)
+    ta, tb, ty = make(600)
+    cal = ConformalCalibrator(score_fn=APSScore(from_logits=True, randomized=True), alpha=0.10)
+    q = cal.calibrate_paired(ca, cb, cy, alpha=0.10, seed=0)
+
+    # evaluate both-render coverage at the paired threshold with a shared u
+    score = APSScore(from_logits=True, randomized=True)
+    g = torch.Generator().manual_seed(123)
+    u = torch.rand(600, generator=g)
+    sa = score(ta, ty, uniforms=u)
+    sb = score(tb, ty, uniforms=u)
+    cov_both = ((sa <= q) & (sb <= q)).float().mean().item()
+    assert cov_both >= 0.85
+
+    # monotone in the max: paired threshold >= the single-render quantile
+    single = compute_conformal_quantile(score(ca, cy, random_seed=0), 0.10)
+    assert q >= single - 1e-9
+
+
 def test_predict_no_fill_default():
     torch.manual_seed(0)
     logits = torch.randn(50, 4)

@@ -95,3 +95,51 @@ def test_batches_accumulate_and_report_n_pairs():
                             use_gt_concepts=False, seed=0)
     assert res["n_pairs"] == 128
     assert len(res["changed"]) == 128 and len(res["prob_shifts"]) == 128
+
+
+class _LogitsAsInputs(torch.nn.Module):
+    """Model whose task logits ARE the input batch (hand-checkable readouts)."""
+
+    def __init__(self, num_classes=3):
+        super().__init__()
+        self.dummy = torch.nn.Parameter(torch.zeros(1))
+        self.num_classes = num_classes
+
+    def forward(self, x, intervened_concepts=None, intervention_mask=None):
+        return x, None
+
+
+def test_coverage_cost_readouts():
+    from ccm.conformal import ConformalCalibrator
+    from ccm.scores import SoftmaxScore
+
+    torch.manual_seed(5)
+    K = 3
+    model = _LogitsAsInputs(K)
+    # calibration: near-singleton sets at a lenient threshold
+    cal_logits = torch.eye(K)[torch.randint(0, K, (300,))] * 6.0 + 0.1 * torch.randn(300, K)
+    cal_y = cal_logits.argmax(dim=-1)
+    cal = ConformalCalibrator(score_fn=SoftmaxScore(from_logits=True), alpha=0.10)
+    cal.calibrate(cal_logits, cal_y)
+
+    # hand-built pairs: y=0 in both; y=1 covered in x only, lost to class 2 in flip
+    def logits_for(winner, K=3):
+        z = torch.full((1, K), -6.0)
+        z[0, winner] = 6.0
+        return z
+
+    x = torch.cat([logits_for(0), logits_for(1)])
+    x_flip = torch.cat([logits_for(0), logits_for(2)])
+    c = torch.zeros(2, 4)
+    y = torch.tensor([0, 1])
+    res = paired_set_change(model, cal, [(x, x_flip, c, y)],
+                            use_gt_concepts=False, seed=0,
+                            substitution_labels=torch.tensor([2, 2]))
+    assert res["contains_x"].tolist() == [True, True]
+    assert res["contains_x_flip"].tolist() == [True, False]
+    assert res["coverage_x"] == 1.0 and res["coverage_x_flip"] == 0.5
+    assert res["coverage_both"] == 0.5
+    assert res["directional_loss"] == 0.5
+    assert res["directional_gain"] == 0.0
+    # the lost pair admits the substitute (class 2 = y^2) in the flipped set
+    assert res["substitution_rate_given_lost"] == 1.0

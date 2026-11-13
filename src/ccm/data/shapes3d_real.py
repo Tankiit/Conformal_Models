@@ -32,7 +32,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset
 
 from ccm.data.shapes3d import PairedEvalDataset, Shapes3DDataset
 
@@ -120,7 +120,10 @@ class RealShapes3DPairedDataset(Dataset):
     # -------------------------------------------------------------- build
 
     def _build(self, images_source: Any, labels: np.ndarray) -> None:
-        rng = np.random.RandomState(self.seed)
+        # Separate rng streams so the SCENE selection is identical across rho
+        # doses (matched held-out scenes); only the wall assignment varies.
+        rng_scenes = np.random.RandomState(self.seed)
+        rng_walls = np.random.RandomState(self.seed + 1)
 
         # Factor levels derived from the data itself (works for the official
         # file and for small grid fixtures alike).
@@ -155,36 +158,46 @@ class RealShapes3DPairedDataset(Dataset):
             y_of_cand = combos[:, 2]
             self.num_classes = 4
 
-        # Per-class sampling without replacement: exactly round(n_y * p_y)
-        # images from the U=1 pool and the rest from the U=0 pool (the rho
-        # knob). If a pool is too small the CLASS SHRINKS -- it is never
-        # topped up from the other pool, which would break the parity
-        # semantics (at rho=1 an odd class must contain U=1 images only).
+        # SCENE-LEVEL sampling (2026-11-13 review): a scene is one declared-concept
+        # combo; both wall renders of a scene exist in the grid, and each sampled
+        # scene enters the dataset EXACTLY ONCE with its rho-assigned wall. The
+        # partner render (flip) is therefore never a dataset item, so partners can
+        # never cross train/cal/test splits (the old image-row sampling allowed
+        # that at partial rho), and scene exchangeability for paired-max
+        # calibration holds by construction.
         p_of_y = (1.0 - self.rho) / 2.0 + self.rho * (np.arange(self.num_classes) % 2)
-        sel = []
+        sel_combos, sel_walls = [], []
         for y in range(self.num_classes):
-            in_y = y_of_cand == y
-            pool_u1 = cand[in_y & (u_of_cand == 1)]
-            pool_u0 = cand[in_y & (u_of_cand == 0)]
-            n_target = num_split(self.num_samples, self.num_classes, y)
-            n1_want = int(round(n_target * p_of_y[y]))
-            n0_want = n_target - n1_want
-            n1 = min(n1_want, len(pool_u1))
-            n0 = min(n0_want, len(pool_u0))
-            if n1 + n0 < n_target:
+            scenes_y = np.unique(combos[y_of_cand == y], axis=0)  # (pool, 4)
+            pool_y = len(scenes_y)
+            want = num_split(self.num_samples, self.num_classes, y)
+            n_target = min(want, pool_y)
+            if n_target < want:
                 print(
                     f"[RealShapes3DPairedDataset] WARNING: class {y} capped at "
-                    f"{n1 + n0} samples (wanted {n_target}; pools u0={len(pool_u0)}, "
-                    f"u1={len(pool_u1)}); lower num_samples or widen floor/u levels."
+                    f"{n_target} scenes (wanted {want}; scene pool {pool_y}); "
+                    f"lower num_samples or widen floor/u levels."
                 )
-            take_u1 = rng.choice(pool_u1, size=n1, replace=False) if n1 else pool_u1[:0]
-            take_u0 = rng.choice(pool_u0, size=n0, replace=False) if n0 else pool_u0[:0]
-            sel.append(np.concatenate([take_u1, take_u0]))
-        sel = rng.permutation(np.concatenate(sel))
+            # Scene selection from a rho-independent stream: same scenes at every dose.
+            scenes_y = scenes_y[rng_scenes.permutation(pool_y)[:n_target]]
+            # rho knob: exactly round(n_target * p_y) of this class's scenes get U=1.
+            n1 = int(round(n_target * p_of_y[y]))
+            wall = np.zeros(n_target, dtype=np.int64)
+            if n1:
+                wall[rng_walls.choice(n_target, size=n1, replace=False)] = 1
+            sel_combos.append(scenes_y)
+            sel_walls.append(wall)
 
-        sel_h5 = sel
-        sel_u = (lvl[sel_h5, 1] == self.u_levels[1]).astype(np.int64)
-        sel_combo = lvl[sel_h5][:, [2, 3, 4, 5]]
+        sel_combo = np.concatenate(sel_combos)
+        sel_u = np.concatenate(sel_walls)
+        order = rng_scenes.permutation(len(sel_combo))
+        sel_combo, sel_u = sel_combo[order], sel_u[order]
+
+        # Scene id per item (combo identity) for scene-level splits downstream.
+        uniq_scenes, scene_inv = np.unique(sel_combo, axis=0, return_inverse=True)
+        self.scene_ids = torch.from_numpy(scene_inv.astype(np.int64))
+        self.n_scenes = len(uniq_scenes)
+
         # Labels recomputed from the sampled combos: identical rule to the
         # pool construction, no index bookkeeping to get wrong.
         if self.label_rule == "composite":
@@ -195,13 +208,15 @@ class RealShapes3DPairedDataset(Dataset):
         else:
             sel_y = sel_combo[:, 2]
 
-        # Partner lookup: same combo, other palette -- exists for every combo
-        # in the official full grid. Map combo tuple -> {u: h5 index}.
-        partner_of = {}
+        # Image lookup: (combo, u) -> h5 index; partner = same combo, other wall.
+        img_of = {}
         for h5_idx, combo, u in zip(cand, combos, u_of_cand):
-            partner_of.setdefault(tuple(combo), {})[int(u)] = int(h5_idx)
+            img_of[(tuple(combo), int(u))] = int(h5_idx)
+        sel_h5 = np.array(
+            [img_of[(tuple(c), int(uu))] for c, uu in zip(sel_combo, sel_u)], dtype=np.int64
+        )
         partner_h5 = np.array(
-            [partner_of[tuple(c)][1 - int(uu)] for c, uu in zip(sel_combo, sel_u)], dtype=np.int64
+            [img_of[(tuple(c), 1 - int(uu))] for c, uu in zip(sel_combo, sel_u)], dtype=np.int64
         )
 
         # Preload selected + partner images (single sorted read from the HDF5).
@@ -254,9 +269,16 @@ def num_split(total: int, parts: int, i: int) -> int:
 
 
 def get_real_paired_shapes3d_loaders(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Same-distribution train/cal/test at the SAME rho (D2: matched-rho main
-    tables; build a second dataset at another rho for the stress eval), plus
-    `pairs_test` feeding ccm.interventions.paired_set_change."""
+    """Scene-level train/cal/test splits at the SAME rho (D2: matched-rho main
+    tables; build a second dataset at another rho for the stress eval).
+
+    Splits are over SCENES (declared-concept combos), never image rows: each
+    scene appears exactly once in the dataset (one wall), so a scene's partner
+    render cannot sit in another split -- the exchangeability that paired-max
+    calibration (ConformalCalibrator.calibrate_paired) needs. The split uses a
+    rho-independent stream, so the SAME scenes land in each split at every dose.
+    Returns `pairs_test` and `pairs_calib` (with labels) feeding
+    ccm.interventions.paired_set_change."""
     data_cfg = config.get("data", {})
     dataset = RealShapes3DPairedDataset(
         data_file=data_cfg.get("h5_file", "/Users/tanmoy/research/data/3dshapes.h5"),
@@ -269,24 +291,44 @@ def get_real_paired_shapes3d_loaders(config: Dict[str, Any]) -> Dict[str, Any]:
         u_levels=tuple(data_cfg.get("u_levels", (1, 8))),
     )
 
-    n_total = len(dataset)
-    n_train = int(0.6 * n_total)
-    n_calib = int(0.2 * n_total)
-    n_test = n_total - n_train - n_calib
-
     seed = config.get("seed", 42)
     batch_size = config.get("training", {}).get("batch_size", 64)
-    generator = torch.Generator().manual_seed(seed)
-    train_ds, calib_ds, test_ds = random_split(
-        dataset, [n_train, n_calib, n_test], generator=generator
+
+    # Scene-level 60/20/20 split from a rho-independent stream.
+    rng_split = np.random.RandomState(seed + 2)
+    scene_perm = rng_split.permutation(dataset.n_scenes)
+    n_train = int(0.6 * dataset.n_scenes)
+    n_calib = int(0.2 * dataset.n_scenes)
+    train_scenes = torch.as_tensor(scene_perm[:n_train])
+    calib_scenes = torch.as_tensor(scene_perm[n_train:n_train + n_calib])
+    test_scenes = torch.as_tensor(scene_perm[n_train + n_calib:])
+
+    scene_arr = dataset.scene_ids
+    idx_all = torch.arange(len(dataset))
+
+    def _item_indices(scene_sel: torch.Tensor) -> list:
+        mask = torch.zeros(dataset.n_scenes, dtype=torch.bool)
+        mask[scene_sel] = True
+        return idx_all[mask[scene_arr]].tolist()
+
+    train_idx, calib_idx, test_idx = (
+        _item_indices(train_scenes), _item_indices(calib_scenes), _item_indices(test_scenes)
     )
+    train_ds = torch.utils.data.Subset(dataset, train_idx)
+    calib_ds = torch.utils.data.Subset(dataset, calib_idx)
+    test_ds = torch.utils.data.Subset(dataset, test_idx)
 
     return {
         "train": DataLoader(train_ds, batch_size=batch_size, shuffle=True),
         "calib": DataLoader(calib_ds, batch_size=batch_size, shuffle=False),
         "test": DataLoader(test_ds, batch_size=batch_size, shuffle=False),
         "pairs_test": DataLoader(
-            PairedEvalDataset(dataset, indices=test_ds.indices),
+            PairedEvalDataset(dataset, indices=test_idx, with_labels=True),
+            batch_size=batch_size,
+            shuffle=False,
+        ),
+        "pairs_calib": DataLoader(
+            PairedEvalDataset(dataset, indices=calib_idx, with_labels=True),
             batch_size=batch_size,
             shuffle=False,
         ),
@@ -298,5 +340,7 @@ def get_real_paired_shapes3d_loaders(config: Dict[str, Any]) -> Dict[str, Any]:
         "label_rule": dataset.label_rule,
         "scale_buckets": dataset.scale_buckets,
         "data_file": dataset.data_file,
-        "n_samples": n_total,
+        "n_samples": len(dataset),
+        "n_scenes": dataset.n_scenes,
+        "split": {"train": len(train_idx), "calib": len(calib_idx), "test": len(test_idx)},
     }

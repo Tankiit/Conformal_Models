@@ -125,10 +125,23 @@ def collect(model, loader, device):
 
 
 @torch.no_grad()
+def collect_paired_logits(model, pairs, device):
+    """Label logits for BOTH renders of each calibration pair (+ labels).
+    pairs: batches of (x, x_flip, c_true, y_true)."""
+    la, lb, ys = [], [], []
+    model.eval()
+    for x, x_flip, _c, y in pairs:
+        la.append(model(x.to(device))[0].cpu())
+        lb.append(model(x_flip.to(device))[0].cpu())
+        ys.append(y)
+    return torch.cat(la), torch.cat(lb), torch.cat(ys)
+
+
+@torch.no_grad()
 def flip_rate(model, pairs, device):
     """Argmax flip rate under U-flips (the probability-sensitivity cousin)."""
     flips, total = 0, 0
-    for x, x_flip, _c in pairs:
+    for x, x_flip, *_ in pairs:
         x, x_flip = x.to(device), x_flip.to(device)
         pred = model(x)[0].argmax(dim=-1).cpu()
         pred_flip = model(x_flip)[0].argmax(dim=-1).cpu()
@@ -140,11 +153,22 @@ def flip_rate(model, pairs, device):
 def evaluate_cell(model, loaders, cfg, device, kind: str) -> dict:
     conf_cfg = cfg.get("conformal", {})
     alpha = conf_cfg.get("alpha", 0.10)
-    calibrator = ConformalCalibrator(
-        score_fn=get_score_function(conf_cfg.get("score_type", "aps")), alpha=alpha
-    )
+    score_fn = get_score_function(conf_cfg.get("score_type", "aps"))
+
+    # Ordinary calibration: single-render threshold.
+    calibrator = ConformalCalibrator(score_fn=score_fn, alpha=alpha)
     cal_logits, cal_y, _, _ = collect(model, loaders["calib"], device)
     calibrator.calibrate(cal_logits, cal_y, alpha=alpha)
+
+    # Paired-max calibration on the SAME model: threshold guaranteeing coverage
+    # under BOTH wall renders (needs the scene-level cal split).
+    paired_cal = ConformalCalibrator(score_fn=score_fn, alpha=alpha)
+    if "pairs_calib" in loaders:
+        pairs_cal = [(x, x_flip, c, y) for x, x_flip, c, y in loaders["pairs_calib"]]
+        pa, pb, py = collect_paired_logits(model, pairs_cal, device)
+        paired_cal.calibrate_paired(pa, pb, py, alpha=alpha, seed=0)
+    else:
+        paired_cal = None
 
     te_logits, te_y, te_c, te_z = collect(model, loaders["test"], device)
     preds = te_logits.argmax(dim=-1)
@@ -152,8 +176,15 @@ def evaluate_cell(model, loaders, cfg, device, kind: str) -> dict:
 
     # Materialize pair batches once (memory: 2 x n_test images; fine at pilot
     # scale -- stream from the loader instead if n_test grows large).
-    pairs = [(x, x_flip, c) for x, x_flip, c in loaders["pairs_test"]]
-    sanity = [(x, x, c) for x, _x_flip, c in pairs]  # u-pairing null: exactly 0
+    pairs = [(x, x_flip, c, y) for x, x_flip, c, y in loaders["pairs_test"]]
+    sanity = [(x, x, c, y) for x, _x_flip, c, y in pairs]  # u-pairing null: exactly 0
+
+    # Shortcut substitute under the composite rule with 2 buckets: same shape,
+    # other scale bucket = Y ^ 1 (at rho=1 the wall IS the bucket).
+    if loaders.get("label_rule", "composite") == "composite" and loaders.get("scale_buckets", 2) == 2:
+        sub_labels = te_y ^ 1
+    else:
+        sub_labels = None
 
     res = {
         "test_acc": float((preds == te_y).float().mean().item()),
@@ -164,9 +195,15 @@ def evaluate_cell(model, loaders, cfg, device, kind: str) -> dict:
         )["set_change_rate"],
         "flip_rate": flip_rate(model, pairs, device),
         "set_change_t2": paired_set_change(
-            model, calibrator, pairs, use_gt_concepts=False, seed=0
+            model, calibrator, pairs, use_gt_concepts=False, seed=0,
+            substitution_labels=sub_labels,
         ),
     }
+    if paired_cal is not None:
+        res["set_change_t2_paired"] = paired_set_change(
+            model, paired_cal, pairs, use_gt_concepts=False, seed=0,
+            substitution_labels=sub_labels,
+        )
     if kind != "blackbox":
         res["set_change_t1"] = paired_set_change(
             model, calibrator, pairs, use_gt_concepts=True, seed=0
@@ -200,7 +237,10 @@ def main():
         for rho in rhos:
             cell_cfg = copy.deepcopy(cfg)
             cell_cfg["data"]["rho"] = rho
-            seed = int(cfg.get("seed", 42)) + int(rho) * 10 + {"cbm": 0, "residual": 1, "blackbox": 2}.get(kind, 3)
+            # Seed depends on kind only: MATCHED training seeds and matched
+            # held-out scenes across rho doses (2026-11-13 review). The old
+            # formula used int(rho), which also collided for fractional rho.
+            seed = int(cfg.get("seed", 42)) + {"cbm": 0, "residual": 1, "blackbox": 2}.get(kind, 3)
             set_seed(seed)
 
             if cell_cfg.get("data", {}).get("source", "procedural") == "real":
@@ -219,16 +259,27 @@ def main():
             train_model(model, loaders["train"], cell_cfg, device, kind)
 
             res = evaluate_cell(model, loaders, cell_cfg, device, kind)
-            tag = f"{kind}_rho{int(rho)}"
+            tag = f"{kind}_rho{rho:g}"  # exact tag: fractional rho must not collide
+            t2 = res["set_change_t2"]
+            t2p = res.get("set_change_t2_paired")
             row = {
                 "model": kind, "rho": rho,
                 "acc": res["test_acc"], "cov": res["coverage"], "size": res["avg_set_size"],
                 "flip": res["flip_rate"],
                 "sanity0": res["sanity_null_set_change"],
-                "t2_change": res["set_change_t2"]["set_change_rate"],
-                "t2_pshift": res["set_change_t2"]["mean_prob_shift_l1"],
+                "t2_change": t2["set_change_rate"],
+                "t2_pshift": t2["mean_prob_shift_l1"],
                 "t1_change": res["set_change_t1"]["set_change_rate"] if "set_change_t1" in res else None,
                 "nn_gap_z": res["nn_leakage"]["gap_vs_null_z"],
+                # coverage-cost readouts (2026-11-13 review)
+                "cov_both": t2.get("coverage_both"),
+                "dir_loss": t2.get("directional_loss"),
+                "subst": t2.get("substitution_rate_given_lost"),
+                "cov_both_paired": t2p.get("coverage_both") if t2p else None,
+                "size_paired": (
+                    float((t2p["set_sizes_x"].float().mean() + t2p["set_sizes_x_flip"].float().mean()) / 2)
+                    if t2p else None
+                ),
             }
             rows.append(row)
             flat_metrics[f"{tag}_acc"] = row["acc"]
@@ -241,6 +292,9 @@ def main():
             if row["t1_change"] is not None:
                 flat_metrics[f"{tag}_set_change_t1"] = row["t1_change"]
             flat_metrics[f"{tag}_nn_gap_vs_null_z"] = row["nn_gap_z"]
+            for k in ("cov_both", "dir_loss", "subst", "cov_both_paired", "size_paired"):
+                if row[k] is not None:
+                    flat_metrics[f"{tag}_{k}"] = row[k]
             print(
                 f"    acc={row['acc']:.3f} cov={row['cov']:.3f} size={row['size']:.2f} | "
                 f"flip={row['flip']:.3f} T2-set-change={row['t2_change']:.3f} "
@@ -248,14 +302,32 @@ def main():
                 f"T1={row['t1_change'] if row['t1_change'] is None else round(row['t1_change'], 3)} "
                 f"| sanity(x,x)={row['sanity0']:.3f} nn_gap_z={row['nn_gap_z']}"
             )
+            if row["cov_both"] is not None:
+                print(
+                    f"    cost: cov-both={row['cov_both']:.3f} dir-loss={row['dir_loss']:.3f} "
+                    f"subst|lost={row['subst'] if row['subst'] is None else round(row['subst'], 3)}"
+                    + (
+                        f" | paired-max: cov-both={row['cov_both_paired']:.3f} "
+                        f"size={row['size_paired']:.2f}"
+                        if row["cov_both_paired"] is not None else ""
+                    )
+                )
 
-    header = "| model | rho | acc | cov | set size | flip rate | T2 set-change | T2 prob-shift | T1 set-change | sanity (x,x) | nn gap_vs_null_z |"
-    sep = "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |"
+    def fmt(v):
+        return "—" if v is None else f"{v:.3f}"
+
+    header = (
+        "| model | rho | acc | cov | size | flip | T2 change | prob-shift | T1 | "
+        "sanity | nn z | cov-both | dir-loss | subst\\|lost | paired cov-both | paired size |"
+    )
+    sep = "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |"
     table = [header, sep] + [
-        f"| {r['model']} | {r['rho']} | {r['acc']:.3f} | {r['cov']:.3f} | {r['size']:.2f} | "
-        f"{r['flip']:.3f} | {r['t2_change']:.3f} | {r['t2_pshift']:.3f} | "
-        f"{r['t1_change'] if r['t1_change'] is None else f'{r['t1_change']:.3f}'} | "
-        f"{r['sanity0']:.3f} | {r['nn_gap_z']} |"
+        f"| {r['model']} | {r['rho']:g} | {r['acc']:.3f} | {r['cov']:.3f} | {r['size']:.2f} | "
+        f"{r['flip']:.3f} | {r['t2_change']:.3f} | {r['t2_pshift']:.3f} | {fmt(r['t1_change'])} | "
+        f"{r['sanity0']:.3f} | {r['nn_gap_z']:.2f} | {fmt(r['cov_both'])} | {fmt(r['dir_loss'])} | "
+        f"{fmt(r['subst'])} | {fmt(r['cov_both_paired'])} | "
+        + ("—" if r['size_paired'] is None else f"{r['size_paired']:.2f}")
+        + " |"
         for r in rows
     ]
     notes = (
@@ -263,7 +335,11 @@ def main():
         "rate at rho=0 is the null (deployed pipeline; concept head sees the "
         "whole image), per D5. sanity(x,x) must be exactly 0 (shared-u APS); "
         "any nonzero value invalidates the cell. rho=0 runs FIRST by design "
-        "(D2).\n\n" + "\n".join(table)
+        "(D2). cov-both = P[Y in S(x) AND S(x_flip)] under ORDINARY calibration "
+        "(the causal cost of the wall flip); paired cov-both/size = paired-max "
+        "calibration (same model, threshold from cal scenes' paired maxima). "
+        "subst|lost = P[same-shape/other-bucket label enters the flipped set | "
+        "true label was covered and is lost].\n\n" + "\n".join(table)
     )
     print("\n" + "\n".join(table))
 
